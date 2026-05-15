@@ -835,3 +835,6 @@ def page_not_found(error):
 def send_current_time():
     return datetime.today().date()
 
+
+if __name__ == "__main__":
+    app.run(debug=True)
