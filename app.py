@@ -18,9 +18,9 @@ from forms import RegistrationForm,LoginForm,SellerForm,EditBudget,EditPassword,
 from werkzeug.security import generate_password_hash,check_password_hash
 import io
 from flask_session import Session
-from functools import wraps
 from datetime import datetime
 from config import Config
+from app.utils.auth import login_required_seller,login_required_admin,login_required_buyer
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -39,30 +39,6 @@ def load_logged_in_buyer(): #function name
 @app.before_request #runs before every request
 def load_logged_in_admin(): #function name
     g.admin = session.get('admin',None) # get user_id from session(dictionary) and store in user variable
-
-def login_required_seller(view):
-    @wraps(view)
-    def wrapped_view(*args,**kwargs):
-        if g.seller is None: #if user from above function is none then it goes to login and go back where you were by adding it to url
-            return redirect(url_for('login',next = request.url))
-        return view(*args,**kwargs)
-    return wrapped_view
-
-def login_required_admin(view):
-    @wraps(view)
-    def wrapped_view(*args,**kwargs):
-        if g.admin is None: #if user from above function is none then it goes to login and go back where you were by adding it to url
-            return redirect(url_for('login',next = request.url))
-        return view(*args,**kwargs)
-    return wrapped_view
-
-def login_required_buyer(view):
-    @wraps(view)
-    def wrapped_view(*args,**kwargs):
-        if g.buyer is None: #if user from above function is none then it goes to login and go back where you were by adding it to url
-            return redirect(url_for('login',next = request.url))
-        return view(*args,**kwargs)
-    return wrapped_view
 
 
 @app.route('/login',methods=['GET','POST'])
