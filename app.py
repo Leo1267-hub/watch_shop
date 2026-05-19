@@ -29,18 +29,11 @@ Session(app)
 
 
 @app.before_request #runs before every request
-def load_logged_in_seller(): #function name
-    g.seller = session.get('seller',None) # get user_id from session(dictionary) and store in user variable
-
-@app.before_request #runs before every request
-def load_logged_in_buyer(): #function name
-    g.buyer = session.get('buyer',None) # get user_id from session(dictionary) and store in user variable
-
-@app.before_request #runs before every request
-def load_logged_in_admin(): #function name
-    g.admin = session.get('admin',None) # get user_id from session(dictionary) and store in user variable
-
-
+def load_logged_in_user():
+    g.seller = session.get('seller',None)
+    g.buyer = session.get('buyer',None)
+    g.admin = session.get('admin',None)
+    
 @app.route('/login',methods=['GET','POST'])
 def login():
     form = LoginForm()
