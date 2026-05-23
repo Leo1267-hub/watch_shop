@@ -21,12 +21,13 @@ from flask_session import Session
 from datetime import datetime
 from config import Config
 from app.utils.auth import login_required_seller,login_required_admin,login_required_buyer
+from app.auth.routes import auth_bp
 
 app = Flask(__name__)
 app.config.from_object(Config)
 app.teardown_appcontext(close_db)
 Session(app)
-
+app.register_blueprint(auth_bp)
 
 @app.before_request #runs before every request
 def load_logged_in_user():
@@ -34,80 +35,6 @@ def load_logged_in_user():
     g.buyer = session.get('buyer',None)
     g.admin = session.get('admin',None)
     
-@app.route('/login',methods=['GET','POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        user_id = form.user_id.data
-        password = form.password.data
-        role = form.role.data
-        role = role.lower()
-        if role == 'admin':
-            if user_id == 'admin':
-                if password == '0621':
-                    session.clear()
-                    session['admin'] = user_id
-                    return redirect(url_for('admin'))
-                else:
-                    form.password.errors.append('wrong password')
-            else:
-                 form.user_id.errors.append('user id doesnt exist')
-            return render_template('login.html',form=form,title='Login')
-            
-        db = get_db()
-        user = db.execute(f"""SELECT * FROM {role}
-                                   WHERE user_id = ?;""",(user_id,)).fetchone()
-        if user is None:
-            form.user_id.errors.append('user id doesnt exist')        
-        elif not check_password_hash(user['password'],password):
-            form.password.errors.append('wrong password')
-        else:
-            if role == 'seller':
-                session.clear()
-                session['seller'] = user_id #append the user_id in session dictionary with key user_id
-                next_page = request.args.get('seller')
-                if not next_page:
-                    next_page = url_for('seller')
-                return redirect(next_page)
-            
-            elif role == 'buyer':
-                session.clear()
-                session['buyer'] = user_id #append the user_id in session dictionary with key user_id
-                next_page = request.args.get('main')
-                if not next_page:
-                    next_page = url_for('main')
-            return redirect(next_page)
-   
-    return render_template('login.html',form=form,title='Login')
-
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    session.modified = True
-    return redirect(url_for('main'))
-
-
-
-@app.route('/register',methods=['GET','POST'])
-def register():
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        user_id = form.user_id.data
-        password = form.password.data
-        role = form.role.data
-        role = role.lower()
-        db = get_db()
-        clash = db.execute(f"""SELECT * FROM {role}
-                                   WHERE user_id = ?;""",(user_id,)).fetchone()
-        if clash is not None or user_id == 'admin':
-            form.user_id.errors.append('user id already taken')
-        else:
-            db.execute(f"""INSERT INTO {role} (user_id,password)
-                                VALUES (?,?);""",(user_id,generate_password_hash(password)))
-            db.commit()
-            return redirect(url_for('login'))
-    return render_template('register.html',form=form,title = 'Registration')
 
 @app.route('/serve_image/<int:id>')
 def serve_image(id):
