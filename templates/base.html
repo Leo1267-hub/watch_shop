@@ -14,18 +14,18 @@
     <header>
         {%if g.seller%}
         <p>User id: {{g.seller}}</p>
-        <p><a href="{{url_for('logout')}}">logout</a></p>
+        <p><a href="{{url_for('auth.logout')}}">logout</a></p>
         {%elif g.buyer%}
         <p>Hello, {{g.buyer}}</p>
         <h1><a href="{{ url_for('main') }}">Watch Shop</a></h1>
-        <p><a href="{{url_for('logout')}}">logout</a></p>
+        <p><a href="{{url_for('auth.logout')}}">logout</a></p>
         {%elif g.admin%}
         <p>User id: {{g.admin}}</p>
-        <p><a href="{{url_for('logout')}}">logout</a></p>
+        <p><a href="{{url_for('auth.logout')}}">logout</a></p>
         {%else%}
-        <p><a href="{{url_for('register')}}">Register</a></p>
+        <p><a href="{{url_for('auth.register')}}">Register</a></p>
         <h1><a href="{{ url_for('main') }}">Watch Shop</a></h1>
-        <p><a href="{{url_for('login')}}">Login</a></p>
+        <p><a href="{{url_for('auth.login')}}">Login</a></p>
         {%endif%}
     </header>
     {%block main_content%}
