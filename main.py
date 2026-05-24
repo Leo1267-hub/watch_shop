@@ -22,6 +22,7 @@ from datetime import datetime
 from config import Config
 from app.utils.auth import login_required_seller,login_required_admin,login_required_buyer
 from app.auth.routes import auth_bp
+from app.utils.context import load_logged_in_user
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -29,11 +30,7 @@ app.teardown_appcontext(close_db)
 Session(app)
 app.register_blueprint(auth_bp)
 
-@app.before_request #runs before every request
-def load_logged_in_user():
-    g.seller = session.get('seller',None)
-    g.buyer = session.get('buyer',None)
-    g.admin = session.get('admin',None)
+app.before_request(load_logged_in_user)
     
 
 @app.route('/serve_image/<int:id>')
