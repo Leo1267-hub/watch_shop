@@ -38,7 +38,7 @@
             {% for watch_id in favourite_that_exists %}
             <div class="watch_card">
 
-                <img src="{{ url_for('serve_image', id=watch_id) }}" alt="watch image" class="watch_img">
+                <img src="{{ url_for('watches.serve_image', id=watch_id) }}" alt="watch image" class="watch_img">
                 <div class="watch_details">
                     <h3 class="watch_title">
                         <a href="{{ url_for('watch', watch_id=watch_id) }}">{{names[watch_id]['title']}}</a>

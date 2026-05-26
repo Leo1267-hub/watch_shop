@@ -30,8 +30,6 @@ class SellerForm(FlaskForm):
     description = TextAreaField('',validators=[InputRequired(),length(max=50)],render_kw={'placeholder':'Enter the description: ','class':'user_input'})
     quantity = IntegerField('How many watches you want to sell?:',validators=[InputRequired(),NumberRange(min=1,max=20)],
                             default=1,render_kw={'class':'user_input'})
-    # the filefield allows to upload files, for my web site it allows to upload the images a small bit of code is taken from:
-    # https://flask-wtf.readthedocs.io/en/0.15.x/form/
     file = FileField('Upload the image of the watch:',      validators=[
         FileRequired(),
         FileAllowed(['jpg', 'png', 'jpeg'])])
@@ -59,8 +57,6 @@ class EditWatch(FlaskForm):
     weight = FloatField('Enter The Weight:',validators=[Optional(),NumberRange(min=1,max=120)],render_kw={'placeholder':'Enter the weight(grams): ','class':'user_input'})
     description = TextAreaField('',validators=[length(max=50)],render_kw={'placeholder':'Enter the description: ','class':'user_input'})
     quantity = IntegerField('How many watches you want to sell?:',validators=[Optional(),NumberRange(min=1,max=20)],render_kw={'class':'user_input'})
-    # the filefield allows to upload files, for my web site it allows to upload the images a small bit of code is taken from:
-    # https://flask-wtf.readthedocs.io/en/0.15.x/form/
     file = FileField('Upload the image of the watch:',      validators=[FileAllowed(['jpg', 'png', 'jpeg'])])
     submit = SubmitField('Submit',render_kw={'class':'btn'})
     

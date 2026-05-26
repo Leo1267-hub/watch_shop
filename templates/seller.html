@@ -90,7 +90,7 @@
                 <div class="watch_card">
                     <a href="{{ url_for('watch', watch_id=watch['watch_id']) }}">
 
-                        <img src="{{ url_for('serve_image', id=watch['watch_id']) }}" alt="{{ watch['title'] }}"
+                        <img src="{{ url_for('watches.serve_image', id=watch['watch_id']) }}" alt="{{ watch['title'] }}"
                             width="128" height="128">
                     </a>
                     <div class="watch_details">
@@ -136,7 +136,7 @@
                     <td>{{ watch['price'] }}€</td>
                     <td>{{ watch['description'] }}</td>
                     <td>{{ watch['quantity'] }}</td>
-                    <td><img src="{{ url_for('serve_image_from_selling', id=watch['watch_id']) }}" alt="picture"
+                    <td><img src="{{ url_for('watches.serve_image_from_selling', id=watch['watch_id']) }}" alt="picture"
                             width="128" height="128"></td>
                     <td>{{ watch['date'] }}</td>
                 </tr>

@@ -40,7 +40,7 @@
             {% for watch in watches %}
             <div class="watch_card">
                 <a href="{{ url_for('watch', watch_id=watch['watch_id']) }}">
-                    <img src="{{ url_for('serve_image', id=watch['watch_id']) }}" alt="watch image" class="watch_img">
+                    <img src="{{ url_for('watches.serve_image', id=watch['watch_id']) }}" alt="watch image" class="watch_img">
                 </a>
                 <div class="watch_details">
                     <h3 class="watch_title"><a

@@ -12,16 +12,16 @@ But to login as an administrator,the role should be 'admin', the user name is ad
 
 
 
-from flask import Flask,render_template,redirect,url_for,session,send_file,abort,flash,get_flashed_messages,g,request
+from flask import Flask,render_template,redirect,url_for,session,flash,get_flashed_messages,g,request
 from app.database import get_db,close_db
 from app.forms import SellerForm,EditBudget,EditPassword,BasketForm,EditWatch,FilterForm,MessageForm,CompareForm,QuestionForm
 from werkzeug.security import generate_password_hash,check_password_hash
-import io
 from flask_session import Session
 from datetime import datetime
 from config import Config
 from app.utils.auth import login_required_seller,login_required_admin,login_required_buyer
 from app.auth.routes import auth_bp
+from app.watches.routes import watches_bp
 from app.utils.context import load_logged_in_user
 
 app = Flask(__name__)
@@ -29,45 +29,11 @@ app.config.from_object(Config)
 app.teardown_appcontext(close_db)
 Session(app)
 app.register_blueprint(auth_bp)
+app.register_blueprint(watches_bp)
+
 
 app.before_request(load_logged_in_user)
     
-
-@app.route('/serve_image/<int:id>')
-def serve_image(id):
-    db = get_db()
-    image = db.execute('SELECT watch_picture FROM watches WHERE watch_id = ?', (id,)).fetchone()
-    # coverts the image from database that represents as binary sequence to an image
-    # code + information is taken:
-    # https://docs.python.org/3/library/io.html#io.BytesIO
-    if image and image['watch_picture']:
-        return send_file(io.BytesIO(image['watch_picture']), mimetype='image/jpeg')
-    else:
-        abort(404)
-        
-@app.route('/serve_image_to_check/<int:id>')
-def serve_image_to_check(id):
-    db = get_db()
-    image = db.execute('SELECT watch_picture FROM watches_to_check WHERE watch_id = ?', (id,)).fetchone()
-    # coverts the image from database that represents as binary sequence to an image
-    # code + information is taken:
-    # https://docs.python.org/3/library/io.html#io.BytesIO
-    if image and image['watch_picture']:
-        return send_file(io.BytesIO(image['watch_picture']), mimetype='image/jpeg')
-    else:
-        abort(404)
-
-@app.route('/serve_image_from_selling/<int:id>')
-def serve_image_from_selling(id):
-    db = get_db()
-    image = db.execute('SELECT watch_picture FROM selling_history WHERE watch_id = ?', (id,)).fetchone()
-    # coverts the image from database that represents as binary sequence to an image
-    # code + information is taken:
-    # https://docs.python.org/3/library/io.html#io.BytesIO
-    if image and image['watch_picture']:
-        return send_file(io.BytesIO(image['watch_picture']), mimetype='image/jpeg')
-    else:
-        abort(404)
     
 @app.route('/',methods=['GET','POST'])
 @app.route('/main',methods=['GET','POST'])
@@ -533,7 +499,7 @@ def seller_profile(user_id):
             db.execute('''INSERT INTO reviews(seller_id,buyer_id,review,date)
                     VALUES (?,?,?,?)''',(user_id,buyer_id,review,date))
             db.commit()
-            flash('Message was successfully sended!')
+            flash('Message was successfully sent!')
             return redirect(url_for('main'))
     else:
         flash(f"there is no such user {user_id}")
@@ -637,7 +603,7 @@ def help_buyer():
             db.execute('''INSERT INTO messages_to_response_buyer(buyer_id,message,date)
                     VALUES (?,?,?)''',(user_id,message,date))
             db.commit()
-            flash('Message was successfully sended!')
+            flash('Message was successfully sent!')
             return redirect(url_for('main'))
     return render_template('help.html',form=form,responded_messages_buyer=responded_messages_buyer,title='Help')
 

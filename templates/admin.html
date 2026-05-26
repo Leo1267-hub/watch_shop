@@ -46,7 +46,7 @@
                 <tr>
                     <td>{{ watch['title'] }}</td>
                     <td>{{ watch['description'] }}</td>
-                    <td><img src="{{ url_for('serve_image_to_check', id=watch['watch_id']) }}" alt="picture" width="128"
+                    <td><img src="{{ url_for('watches.serve_image_to_check', id=watch['watch_id']) }}" alt="picture" width="128"
                             height="128"></td>
                     <td>{{ watch['material'] }}</td>
                     <td>{{ watch['user_id'] }}</td>

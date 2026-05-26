@@ -32,8 +32,8 @@
             {% if watch1 and watch2 %}
             <tr>
                 <th>Image</th>
-                <td><img src="{{ url_for('serve_image', id=watch1) }}" alt="picture" width="128" height="128"></td>
-                <td><img src="{{ url_for('serve_image', id=watch2) }}" alt="picture" width="128" height="128"></td>
+                <td><img src="{{ url_for('watches.serve_image', id=watch1) }}" alt="picture" width="128" height="128"></td>
+                <td><img src="{{ url_for('watches.serve_image', id=watch2) }}" alt="picture" width="128" height="128"></td>
             </tr>
             <tr>
                 <th>Price</th>

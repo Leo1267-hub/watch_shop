@@ -38,7 +38,7 @@
                 {% for watch in seller_watches %}
                 <div class="watch_card">
                     <a href="{{ url_for('watch', watch_id=watch['watch_id']) }}">
-                        <img src="{{ url_for('serve_image', id=watch['watch_id']) }}" alt="{{ watch['title'] }}"
+                        <img src="{{ url_for('watches.serve_image', id=watch['watch_id']) }}" alt="{{ watch['title'] }}"
                             width="128" height="128">
                     </a>
                     <div class="watch_details">
