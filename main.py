@@ -14,7 +14,7 @@ But to login as an administrator,the role should be 'admin', the user name is ad
 
 from flask import Flask,render_template,redirect,url_for,session,flash,get_flashed_messages,g,request
 from app.database import get_db,close_db
-from app.forms import SellerForm,EditBudget,EditPassword,BasketForm,EditWatch,FilterForm,MessageForm,CompareForm,QuestionForm
+from app.forms import SellerForm,EditBudget,EditPassword,BasketForm,EditWatch,MessageForm,CompareForm,QuestionForm
 from werkzeug.security import generate_password_hash,check_password_hash
 from flask_session import Session
 from datetime import datetime
@@ -33,73 +33,6 @@ app.register_blueprint(watches_bp)
 
 
 app.before_request(load_logged_in_user)
-    
-    
-@app.route('/',methods=['GET','POST'])
-@app.route('/main',methods=['GET','POST'])
-def main():
-    form = FilterForm()
-    db = get_db()
-    message = get_flashed_messages()
-    if 'buyer' in session:
-        watches = db.execute('''SELECT * FROM watches
-                                WHERE user_id NOT IN (
-                                    SELECT seller_id
-                                    FROM blocked_sellers
-                                    WHERE buyer_id = ?
-                                );''',(session['buyer'],)).fetchall()
-    else:
-        watches = db.execute('''SELECT * FROM watches''').fetchall()
-    all_watches = [watch['title'] for watch in watches]
-    all_possible_watches = []
-    # removing all duplicates
-    for title in all_watches:
-        if title not in all_possible_watches:
-            all_possible_watches.append(title)
-    form.watch.choices = all_possible_watches + ['all']
-    
-    if form.validate_on_submit():
-        # WHERE 1=1 clause acts as a template to create the base query and add condition to it as 1=1 is always True
-        # small bit of code and information taken from: https://pushmetrics.io/blog/why-use-where-1-1-in-sql-queries-exploring-the-surprising-benefits-of-a-seemingly-redundant-clause/#:~:text=In%20applications%20where%20SQL%20queries,the%20first%20condition%20or%20not.
-        query =('''SELECT * FROM watches WHERE 1=1 ''')
-        user_inputs = []
-        if form.watch.data and form.watch.data != 'all':
-            #Demonstrator helped with the idea how to build query dynamically
-            # also a little bit of code taken from:
-            # https://stackoverflow.com/questions/75337665/dynamic-sql-queries-with-sqlite3
-            query += ''' AND title LIKE ?'''
-            user_inputs.append(form.watch.data)
-        if form.min_price.data:
-            query += ''' AND price >= ?'''
-            user_inputs.append(form.min_price.data)
-        if form.max_price.data:
-            query += ''' AND price <= ?'''
-            user_inputs.append(form.max_price.data)
-        if form.sort.data and form.sort.data != 'all':
-            if form.sort.data == 'Price low to high':
-                query += ''' ORDER BY price ASC'''
-            else:
-                query += ''' ORDER BY price DESC'''
-        # executes the ready request using '?' from tuple list provided 
-        watches = db.execute(query,tuple(user_inputs)).fetchall()
-        # updates the choices based on your filters
-        all_watches = [watch['title'] for watch in watches]
-        all_possible_watches = []
-        # removing all duplicates
-        for title in all_watches:
-            if title not in all_possible_watches:
-                all_possible_watches.append(title)
-        form.watch.choices = all_possible_watches + ['all']
-        
-    # id_list = [watch['watch_id'] for watch in watches]
-    # pictures = []
-    # for id in id_list:
-    #     image = db.execute('SELECT watch_picture FROM watches WHERE watch_id = ?', (id,)).fetchone() 
-    #     if image and image['watch_picture']:
-    #         pictures.append( send_file(io.BytesIO(image['watch_picture']), mimetype='image/jpeg'))
- 
-    return render_template('index.html',title = 'Main page',watches=watches,message=message,form=form)
-
 
 
 @app.route('/seller',methods=['GET','POST'])
@@ -289,7 +222,7 @@ def basket():
                 db.execute('''UPDATE seller SET income = income + ? WHERE user_id = ?''',(price_for_watch_id,seller_id))
                 session['basket'].pop(watch_id) 
             db.commit()
-            return redirect(url_for('logout'))
+            return redirect(url_for('auth.logout'))
             
     session.modified = True  #gets dictionary 
     return render_template('basket.html',basket=session['basket'],title = 'Basket',message=message,total_cost=total_cost,names=names,form=form,message_to_pay=message_to_pay)
@@ -313,7 +246,7 @@ def add_to_basket(watch_id):
         # print(session['basket'][watch_id])
             message = f"Only {watch['quantity']} left in stock"
             flash(message)
-            return redirect(url_for('main'))
+            return redirect(url_for('watches.main'))
         else:
             session['basket'][watch_id]['quantity'] +=1
             session['basket'][watch_id]['price'] +=watch['price']
@@ -431,7 +364,7 @@ def add_to_favourite(watch_id):
                        WHERE watch_id = ? AND user_id = ?''',(watch_id,user_id)).fetchone()
     if check:
         flash('You already have this watch in favourite')
-        return redirect(url_for('main'))
+        return redirect(url_for('watches.main'))
     db.execute('''INSERT INTO favourite(user_id,watch_id)
                VALUES (?,?);''',(user_id,watch_id))
     db.commit()
@@ -497,13 +430,13 @@ def seller_profile(user_id):
             review = form.message.data
             date = send_current_time()
             db.execute('''INSERT INTO reviews(seller_id,buyer_id,review,date)
-                    VALUES (?,?,?,?)''',(user_id,buyer_id,review,date))
+                VALUES (?,?,?,?)''',(user_id,buyer_id,review,date))
             db.commit()
             flash('Message was successfully sent!')
-            return redirect(url_for('main'))
+            return redirect(url_for('watches.main'))
     else:
         flash(f"there is no such user {user_id}")
-        return redirect(url_for('main'))
+        return redirect(url_for('watches.main'))
     return render_template('seller_profile.html',seller_watches=seller_watches,user_id=user_id,form=form,reviews=reviews,blocked_sellers=blocked_sellers,title = 'Seller Profile')
 
 
@@ -540,10 +473,10 @@ def compare_watch(watch_id):
     watch2 = session.get('watch2')
     if (watch1 == watch_id) or (watch2 == watch_id):
         flash('You cannot compare the same watch')
-        return redirect(url_for('main'))
+        return redirect(url_for('watches.main'))
     if watch1  and watch2:
         flash('You can compare only  2 watches at a time!')
-        return redirect(url_for('main'))
+        return redirect(url_for('watches.main'))
     
     if not watch1:
         session['watch1'] = watch_id
@@ -601,10 +534,10 @@ def help_buyer():
             message = form.message.data
             date = send_current_time()
             db.execute('''INSERT INTO messages_to_response_buyer(buyer_id,message,date)
-                    VALUES (?,?,?)''',(user_id,message,date))
+                VALUES (?,?,?)''',(user_id,message,date))
             db.commit()
             flash('Message was successfully sent!')
-            return redirect(url_for('main'))
+            return redirect(url_for('watches.main'))
     return render_template('help.html',form=form,responded_messages_buyer=responded_messages_buyer,title='Help')
 
 @app.route('/help_admin')
@@ -655,7 +588,7 @@ def block_seller(seller_id):
         return redirect(url_for('seller_profile',user_id=seller_id))
     else:
         flash(f"{seller_id} is already blocked!")
-        return redirect(url_for('main'))
+        return redirect(url_for('watches.main'))
 
 
 @app.route('/unblock_seller/<seller_id>')
@@ -673,7 +606,7 @@ def unblock_seller(seller_id):
         return redirect(url_for('seller_profile',user_id=seller_id))
     else:
         flash(f"{seller_id} isn't blocked")
-        return redirect(url_for('main'))
+        return redirect(url_for('watches.main'))
     
 
 @app.route('/blocked_sellers')
@@ -688,7 +621,7 @@ def blocked_sellers():
 
 @app.errorhandler(404)
 def page_not_found(error):
-    return redirect(url_for('main'))
+    return redirect(url_for('watches.main'))
 
 def send_current_time():
     return datetime.today().date()

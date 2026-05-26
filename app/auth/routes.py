@@ -51,7 +51,7 @@ def login():
             if role == "seller":
                 return redirect(url_for("seller"))
 
-            return redirect(url_for("main"))
+            return redirect(url_for("watches.main"))
 
     return render_template("login.html", form=form, title="Login")
 
@@ -60,7 +60,7 @@ def login():
 def logout():
     session.clear()
     session.modified = True
-    return redirect(url_for("main"))
+    return redirect(url_for("watches.main"))
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])

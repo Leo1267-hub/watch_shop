@@ -17,14 +17,14 @@
         <p><a href="{{url_for('auth.logout')}}">logout</a></p>
         {%elif g.buyer%}
         <p>Hello, {{g.buyer}}</p>
-        <h1><a href="{{ url_for('main') }}">Watch Shop</a></h1>
+        <h1><a href="{{ url_for('watches.main') }}">Watch Shop</a></h1>
         <p><a href="{{url_for('auth.logout')}}">logout</a></p>
         {%elif g.admin%}
         <p>User id: {{g.admin}}</p>
         <p><a href="{{url_for('auth.logout')}}">logout</a></p>
         {%else%}
         <p><a href="{{url_for('auth.register')}}">Register</a></p>
-        <h1><a href="{{ url_for('main') }}">Watch Shop</a></h1>
+        <h1><a href="{{ url_for('watches.main') }}">Watch Shop</a></h1>
         <p><a href="{{url_for('auth.login')}}">Login</a></p>
         {%endif%}
     </header>

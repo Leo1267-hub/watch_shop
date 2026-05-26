@@ -10,7 +10,7 @@
 <div class="layout">
     <aside class="sidebar">
         <nav>
-            <a href="{{ url_for('main') }}">Catalog <i class='bx bxs-watch'></i></a>
+            <a href="{{ url_for('watches.main') }}">Catalog <i class='bx bxs-watch'></i></a>
             <a href="{{ url_for('profile') }}">Profile <i class='bx bx-user-circle'></i></a>
             <a href="{{ url_for('basket') }}">Basket <i class='bx bx-basket'></i></a>
             <a href="{{ url_for('favourite') }}">Favourite <i class='bx bxs-heart'></i></a>
@@ -143,12 +143,12 @@
             </tr>
             {% elif watch1 or watch2 %}
             <tr>
-                <td colspan="3"><a class="action" href="{{ url_for('main') }}">You have only one watch to compare</a>
+                <td colspan="3"><a class="action" href="{{ url_for('watches.main') }}">You have only one watch to compare</a>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="3"><a class="action" href="{{ url_for('main') }}">Add watch to compare</a></td>
+                <td colspan="3"><a class="action" href="{{ url_for('watches.main') }}">Add watch to compare</a></td>
             </tr>
             {% endif %}
         </table>
