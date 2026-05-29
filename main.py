@@ -149,15 +149,6 @@ def delete(watch_id):
     
     return redirect(url_for('seller'))
 
-
-@app.route('/watch/<int:watch_id>')
-def watch(watch_id):
-    db = get_db()
-    watch = db.execute('''SELECT * FROM watches WHERE watch_id = ?;''',(watch_id,)).fetchone()
-    title = watch['title']
-    return render_template('watch.html',watch=watch,title = title)
-
-
 @app.route('/basket',methods = ['GET','POST'])
 @login_required_buyer
 def basket():

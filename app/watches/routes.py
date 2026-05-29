@@ -119,3 +119,14 @@ def main():
         message=message,
         form=form
     )
+    
+@watches_bp.route("/watch/<int:watch_id>")
+def watch(watch_id):
+    db = get_db()
+    watch = db.execute(
+        "SELECT * FROM watches WHERE watch_id = ?;",
+        (watch_id,)
+    ).fetchone()
+
+    title = watch["title"]
+    return render_template("watch.html", watch=watch, title=title)

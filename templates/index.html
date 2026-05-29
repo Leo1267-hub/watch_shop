@@ -39,12 +39,12 @@
         <div class="watch_grid">
             {% for watch in watches %}
             <div class="watch_card">
-                <a href="{{ url_for('watch', watch_id=watch['watch_id']) }}">
+                <a href="{{ url_for('watches.watch', watch_id=watch['watch_id']) }}">
                     <img src="{{ url_for('watches.serve_image', id=watch['watch_id']) }}" alt="watch image" class="watch_img">
                 </a>
                 <div class="watch_details">
                     <h3 class="watch_title"><a
-                            href="{{ url_for('watch', watch_id=watch['watch_id'] )}}">{{watch['title']}}</a></h3>
+                            href="{{ url_for('watches.watch', watch_id=watch['watch_id'] )}}">{{watch['title']}}</a></h3>
                     <p class="price">{{ watch['price'] }}€</p>
                     <p class="quantity">Quantity: {{ watch['quantity'] }}</p>
                     <p class="seller">
