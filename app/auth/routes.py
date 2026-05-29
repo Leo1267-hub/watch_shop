@@ -49,7 +49,7 @@ def login():
             session[role] = user_id
 
             if role == "seller":
-                return redirect(url_for("seller"))
+                return redirect(url_for("seller.seller"))
 
             return redirect(url_for("watches.main"))
 

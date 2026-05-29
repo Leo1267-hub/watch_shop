@@ -22,6 +22,7 @@ from config import Config
 from app.utils.auth import login_required_seller,login_required_admin,login_required_buyer
 from app.auth.routes import auth_bp
 from app.watches.routes import watches_bp
+from app.seller.routes import seller_bp
 from app.utils.context import load_logged_in_user
 
 app = Flask(__name__)
@@ -30,52 +31,9 @@ app.teardown_appcontext(close_db)
 Session(app)
 app.register_blueprint(auth_bp)
 app.register_blueprint(watches_bp)
-
+app.register_blueprint(seller_bp)
 
 app.before_request(load_logged_in_user)
-
-
-@app.route('/seller',methods=['GET','POST'])
-@login_required_seller
-def seller():
-    print(send_current_time())
-    form = SellerForm()
-    message = ''
-    user_id = session['seller']
-    db =get_db()
-    watches = db.execute('''SELECT * FROM watches
-                         WHERE user_id = ?''',(user_id,)).fetchall()
-    income = db.execute('''SELECT income FROM seller
-                        WHERE user_id = ?''',(user_id,)).fetchone()
-    
-    selling_history = db.execute('''SELECT * FROM selling_history
-                                 WHERE user_id = ?''',(user_id,)).fetchall()
-    
-    reviews = db.execute('''SELECT * FROM reviews WHERE seller_id = ?
-    ORDER BY date DESC;''',(user_id,)).fetchall()
-    
-    if form.validate_on_submit():
-        title = form.title.data
-        title = title.capitalize()
-        price = form.price.data
-        price = round(price,3)
-        size = form.size.data
-        size = round(size,3)
-        material = form.material.data
-        weight = form.weight.data
-        weight = round(weight,3)
-        description = form.description.data
-        quantity = form.quantity.data
-        # this is puts the into the database as a binary sequence
-        file = form.file.data
-        watch_picture = file.read()
-        user_id = session['seller']
-        db.execute('''INSERT INTO watches_to_check(user_id,title,price,size,material,weight,description,quantity,watch_picture) VALUES(?,?,?,?,?,?,?,?,?);''',(user_id,title,price,size,material,weight,description,quantity,watch_picture)) 
-        db.commit()
-        message = 'Successful!'
-        return redirect(url_for('seller'))#needed to automatically reload the page
-        
-    return render_template('seller.html',form=form,message=message,watches=watches,income = round(income['income'],2),selling_history=selling_history,reviews=reviews,title = 'Seller')
 
 @app.route('/delete_review/<int:review_id>')
 @login_required_seller
@@ -84,7 +42,7 @@ def delete_review(review_id):
     db.execute('''DELETE FROM reviews
                WHERE review_id = ?''',(review_id,))
     db.commit()
-    return redirect(url_for('seller'))
+    return redirect(url_for('seller.seller'))
 
 
 @app.route('/edit_watch/<int:watch_id>',methods = ['GET','POST'])
@@ -128,7 +86,7 @@ def edit_watch(watch_id):
         
         db.execute('''UPDATE watches SET title = ?, price = ?,size = ?,material = ?,weight = ?, description = ?, quantity = ?, watch_picture = ? WHERE watch_id = ? ''',(title,price,size,material,weight,description,quantity,watch_picture,watch_id)) 
         db.commit()
-        return redirect(url_for('seller'))
+        return redirect(url_for('seller.seller'))
       
     return render_template('edit_watch.html',form=form,title = 'edit watches',
     name = watch['title'],
@@ -147,7 +105,7 @@ def delete(watch_id):
                WHERE watch_id = ? ''',(watch_id,))
     db.commit()
     
-    return redirect(url_for('seller'))
+    return redirect(url_for('seller.seller'))
 
 @app.route('/basket',methods = ['GET','POST'])
 @login_required_buyer
