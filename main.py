@@ -24,6 +24,7 @@ from app.auth.routes import auth_bp
 from app.watches.routes import watches_bp
 from app.seller.routes import seller_bp
 from app.buyer.routes import buyer_bp
+from app.admin.routes import admin_bp
 from app.utils.context import load_logged_in_user
 
 app = Flask(__name__)
@@ -34,6 +35,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(watches_bp)
 app.register_blueprint(seller_bp)
 app.register_blueprint(buyer_bp)
+app.register_blueprint(admin_bp)
 
 app.before_request(load_logged_in_user)
 
@@ -362,42 +364,6 @@ def compare_watch(watch_id):
         session['watch2'] = watch_id
     return redirect(url_for('compare'))
     
-
-@app.route('/admin',methods = ['POST','GET'])
-@login_required_admin
-def admin():
-    db = get_db()
-    watches = db.execute('''SELECT * FROM watches_to_check''').fetchall()
-    return render_template('admin.html',watches=watches,title = 'Admin')
-
-
-@app.route('/accept/<int:watch_id>')
-@login_required_admin
-def accept(watch_id):
-    db = get_db()
-    watch = db.execute('''SELECT * FROM watches_to_check
-                       WHERE watch_id = ?''',(watch_id,)).fetchone()
-    user_id = watch['user_id']
-    title = watch['title']
-    price = watch['price']
-    size = watch['size']
-    material = watch['material']
-    weight = watch['weight']
-    description = watch['description']
-    quantity = watch['quantity']
-    watch_picture = watch['watch_picture']
-    db.execute('''INSERT INTO watches(user_id,title,price,size,material,weight,description,quantity,watch_picture) VALUES(?,?,?,?,?,?,?,?,?);''',(user_id,title,price,size,material,weight,description,quantity,watch_picture)) 
-    db.commit()
-    return redirect(url_for('reject' ,watch_id = watch_id))
-
-@app.route('/reject/<int:watch_id>')
-@login_required_admin
-def reject(watch_id):
-    db = get_db()
-    db.execute('''DELETE FROM watches_to_check
-               WHERE watch_id = ?''',(watch_id,))
-    db.commit()
-    return redirect(url_for('admin'))
 
 @app.route('/help_buyer',methods = ['POST','GET'])
 @login_required_buyer

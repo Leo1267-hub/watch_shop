@@ -11,18 +11,18 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm()
-
     if form.validate_on_submit():
         user_id = form.user_id.data
         password = form.password.data
         role = form.role.data.lower()
 
+        # Admin login handled separately
         if role == "admin":
             if user_id == "admin":
                 if password == "0621":
                     session.clear()
                     session["admin"] = user_id
-                    return redirect(url_for("admin"))
+                    return redirect(url_for("admin.admin"))
                 else:
                     form.password.errors.append("wrong password")
             else:
