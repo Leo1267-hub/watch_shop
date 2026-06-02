@@ -10,7 +10,7 @@
     <aside class="sidebar">
         <nav>
             <a href="{{url_for('admin.admin')}}">Main</a>
-            <a href="{{url_for('help_admin')}}">Questions</a>
+            <a href="{{url_for('admin.help_admin')}}">Questions</a>
         </nav>
     </aside>
     <main>
@@ -27,23 +27,17 @@
             </tr>
             {%for message in respond_needed%}
             <tr>
+                <td>{{message['message']}}</td>
+                <td>{{message['date']}}</td>
+                <td>{{message['buyer_id']}}</td>
                 <td>
-                    {{message['message']}}
-                </td>
-                <td>
-                    {{message['date']}}
-                </td>
-                <td>
-                    {{message['buyer_id']}}
-                </td>
-                <td>
-                    <a class='btn' href="{{url_for('response',message_id = message['message_id'])}}">Response</a>
+                    <a class='btn' href="{{url_for('admin.response', message_id=message['message_id'])}}">Response</a>
                 </td>
             </tr>
             {%endfor%}
         </table>
         {%else%}
-        <p class="message">No messages to respond.✅</p>
+        <p class="message">No messages to respond.</p>
 
         {%endif%}
     </main>
