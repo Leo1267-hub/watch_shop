@@ -319,33 +319,6 @@ def seller_profile(user_id):
         return redirect(url_for('watches.main'))
     return render_template('seller_profile.html',seller_watches=seller_watches,user_id=user_id,form=form,reviews=reviews,blocked_sellers=blocked_sellers,title = 'Seller Profile')
 
-
-@app.route('/compare',methods = ['POST','GET'])
-def compare():
-    form = CompareForm()
-    db = get_db()
-    watch1_inf = ''
-    watch2_inf = ''
-    if 'watch1' not in session:
-        session['watch1'] = {}
-    if 'watch2' not in session:
-        session['watch2'] = {}
-    watch1 = session['watch1']
-    watch2 = session['watch2']
-    if watch1 and watch2:
-        watch1_inf = db.execute('''SELECT * FROM watches
-                                WHERE watch_id = ?''',(watch1,)).fetchone()
-        watch2_inf = db.execute('''SELECT * FROM watches
-                                WHERE watch_id = ?''',(watch2,)).fetchone()
-    if form.validate_on_submit():
-        session.pop('watch1',None)
-        session.pop('watch2',None)
-        session.modified = True
-        return redirect(url_for('compare'))
-        
-    return render_template('compare.html',watch1=watch1,watch2=watch2,form=form,watch2_inf=watch2_inf,watch1_inf=watch1_inf,title='Compare')
-
-
 @app.route('/compare_watch/<int:watch_id>')
 # @login_required_buyer
 def compare_watch(watch_id):
@@ -383,14 +356,6 @@ def help_buyer():
             flash('Message was successfully sent!')
             return redirect(url_for('watches.main'))
     return render_template('help.html',form=form,responded_messages_buyer=responded_messages_buyer,title='Help')
-
-@app.route('/help_admin')
-@login_required_admin
-def help_admin():
-    db = get_db()
-    respond_needed = db.execute('''SELECT * FROM messages_to_response_buyer''').fetchall()
-    return render_template('admin_help.html',respond_needed=respond_needed,title = 'Response')
-
 
 @app.route('/response/<int:message_id>',methods=['POST','GET'])
 @login_required_admin

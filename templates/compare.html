@@ -14,7 +14,7 @@
             <a href="{{ url_for('profile') }}">Profile <i class='bx bx-user-circle'></i></a>
             <a href="{{ url_for('basket') }}">Basket <i class='bx bx-basket'></i></a>
             <a href="{{ url_for('favourite') }}">Favourite <i class='bx bxs-heart'></i></a>
-            <a href="{{ url_for('compare') }}">Compare <i class='bx bx-git-compare'></i></a>
+            <a href="{{ url_for('watches.compare') }}">Compare <i class='bx bx-git-compare'></i></a>
             <a href="{{ url_for('help_buyer') }}">Help <i class='bx bx-help-circle'></i></a>
             <a href="{{ url_for('blocked_sellers') }}">Blocked Sellers <i class='bx bx-block'></i></a>
         </nav>
@@ -32,8 +32,10 @@
             {% if watch1 and watch2 %}
             <tr>
                 <th>Image</th>
-                <td><img src="{{ url_for('watches.serve_image', id=watch1) }}" alt="picture" width="128" height="128"></td>
-                <td><img src="{{ url_for('watches.serve_image', id=watch2) }}" alt="picture" width="128" height="128"></td>
+                <td><img src="{{ url_for('watches.serve_image', id=watch1) }}" alt="picture" width="128" height="128">
+                </td>
+                <td><img src="{{ url_for('watches.serve_image', id=watch2) }}" alt="picture" width="128" height="128">
+                </td>
             </tr>
             <tr>
                 <th>Price</th>
@@ -143,7 +145,8 @@
             </tr>
             {% elif watch1 or watch2 %}
             <tr>
-                <td colspan="3"><a class="action" href="{{ url_for('watches.main') }}">You have only one watch to compare</a>
+                <td colspan="3"><a class="action" href="{{ url_for('watches.main') }}">You have only one watch to
+                        compare</a>
                 </td>
             </tr>
             {% else %}

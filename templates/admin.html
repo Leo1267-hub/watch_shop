@@ -11,13 +11,12 @@
     <aside class="sidebar">
         <nav>
             <a href="{{ url_for('admin.admin') }}">Main</a>
-            <a href="{{ url_for('help_admin') }}">Questions</a>
+            <a href="{{ url_for('admin.help_admin') }}">Questions</a>
         </nav>
     </aside>
 
     <main>
         <h1>Admin</h1>
-
         {% with messages = get_flashed_messages() %}
         {% if messages %}
         <div class="alert">
