@@ -1,9 +1,9 @@
 import io
 
-from flask import Blueprint, abort, render_template, send_file, session, get_flashed_messages
+from flask import Blueprint, abort, flash, get_flashed_messages, redirect, render_template, send_file, session, url_for
 
 from app.database import get_db
-from app.forms import FilterForm
+from app.forms import CompareForm, FilterForm
 
 
 watches_bp = Blueprint("watches", __name__)
@@ -49,7 +49,8 @@ def serve_image_from_selling(id):
         return send_file(io.BytesIO(image["watch_picture"]), mimetype="image/jpeg")
 
     abort(404)
-    
+
+
 @watches_bp.route("/", methods=["GET", "POST"])
 @watches_bp.route("/main", methods=["GET", "POST"])
 def main():
@@ -119,7 +120,8 @@ def main():
         message=message,
         form=form
     )
-    
+
+
 @watches_bp.route("/watch/<int:watch_id>")
 def watch(watch_id):
     db = get_db()
@@ -130,3 +132,66 @@ def watch(watch_id):
 
     title = watch["title"]
     return render_template("watch.html", watch=watch, title=title)
+
+
+@watches_bp.route("/compare", methods=["POST", "GET"])
+def compare():
+    form = CompareForm()
+    db = get_db()
+    watch1_inf = ""
+    watch2_inf = ""
+
+    if "watch1" not in session:
+        session["watch1"] = {}
+    if "watch2" not in session:
+        session["watch2"] = {}
+
+    watch1 = session["watch1"]
+    watch2 = session["watch2"]
+
+    if watch1 and watch2:
+        watch1_inf = db.execute(
+            "SELECT * FROM watches WHERE watch_id = ?",
+            (watch1,)
+        ).fetchone()
+        watch2_inf = db.execute(
+            "SELECT * FROM watches WHERE watch_id = ?",
+            (watch2,)
+        ).fetchone()
+
+    if form.validate_on_submit():
+        session.pop("watch1", None)
+        session.pop("watch2", None)
+        session.modified = True
+        return redirect(url_for("watches.compare"))
+
+    return render_template(
+        "compare.html",
+        watch1=watch1,
+        watch2=watch2,
+        form=form,
+        watch2_inf=watch2_inf,
+        watch1_inf=watch1_inf,
+        title="Compare"
+    )
+
+
+@watches_bp.route("/compare_watch/<int:watch_id>")
+def compare_watch(watch_id):
+    watch1 = session.get("watch1")
+    watch2 = session.get("watch2")
+
+    if (watch1 == watch_id) or (watch2 == watch_id):
+        flash("You cannot compare the same watch")
+        return redirect(url_for("watches.main"))
+
+    if watch1 and watch2:
+        flash("You can compare only  2 watches at a time!")
+        return redirect(url_for("watches.main"))
+
+    if not watch1:
+        session["watch1"] = watch_id
+    elif not watch2:
+        session["watch2"] = watch_id
+
+    return redirect(url_for("watches.compare"))
