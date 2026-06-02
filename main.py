@@ -14,7 +14,7 @@ But to login as an administrator,the role should be 'admin', the user name is ad
 
 from flask import Flask,render_template,redirect,url_for,session,flash,get_flashed_messages,g,request
 from app.database import get_db,close_db
-from app.forms import SellerForm,EditBudget,EditPassword,BasketForm,EditWatch,MessageForm,CompareForm,QuestionForm
+from app.forms import EditBudget,EditPassword,BasketForm,MessageForm,CompareForm,QuestionForm
 from werkzeug.security import generate_password_hash,check_password_hash
 from flask_session import Session
 from datetime import datetime
@@ -37,83 +37,10 @@ app.register_blueprint(buyer_bp)
 
 app.before_request(load_logged_in_user)
 
-@app.route('/delete_review/<int:review_id>')
-@login_required_seller
-def delete_review(review_id):
-    db = get_db()
-    db.execute('''DELETE FROM reviews
-               WHERE review_id = ?''',(review_id,))
-    db.commit()
-    return redirect(url_for('seller.seller'))
-
-
-@app.route('/edit_watch/<int:watch_id>',methods = ['GET','POST'])
-@login_required_seller
-def edit_watch(watch_id):
-    
-    form = EditWatch()
-    db = get_db()
-    watch = db.execute('''SELECT * FROM watches
-                       WHERE watch_id = ?''',(watch_id,)).fetchone()
-    title = watch['title']
-    price = watch['price']
-    size = watch['size']
-    material = watch['material']
-    weight = watch['weight']
-    description = watch['description']
-    quantity = watch['quantity']
-    watch_picture = watch['watch_picture']
-    if form.validate_on_submit():
-        if form.title.data:
-            title = form.title.data
-            title = title.capitalize()
-        if form.price.data is not None:
-            price = form.price.data
-        if form.size.data is not None:
-            size = form.size.data
-        if form.material.data:
-            material = form.material.data
-        if form.weight.data is not None:
-            weight = form.weight.data
-        if form.price.data is not None:
-            price = form.price.data
-        if form.description.data:
-            description = form.description.data
-        if form.quantity.data is not None:
-            quantity = form.quantity.data
-        if form.file.data:
-            file = form.file.data
-            watch_picture = file.read()
-        
-        
-        db.execute('''UPDATE watches SET title = ?, price = ?,size = ?,material = ?,weight = ?, description = ?, quantity = ?, watch_picture = ? WHERE watch_id = ? ''',(title,price,size,material,weight,description,quantity,watch_picture,watch_id)) 
-        db.commit()
-        return redirect(url_for('seller.seller'))
-      
-    return render_template('edit_watch.html',form=form,title = 'edit watches',
-    name = watch['title'],
-    price = watch['price'],
-    size = watch['size'],
-    material = watch['material'],
-    weight = watch['weight'],
-    description = watch['description'],
-    quantity = watch['quantity'])
-
-@app.route('/delete/<int:watch_id>')
-@login_required_seller
-def delete(watch_id):
-    db = get_db()
-    db.execute('''DELETE FROM watches
-               WHERE watch_id = ? ''',(watch_id,))
-    db.commit()
-    
-    return redirect(url_for('seller.seller'))
-
 @app.route('/basket',methods = ['GET','POST'])
 @login_required_buyer
 def basket():
     form = BasketForm()
-    #https://flask.palletsprojects.com/en/stable/patterns/flashing/ code taken from here
     message = get_flashed_messages()
     message_to_pay = ''
     if 'basket' not in session:
