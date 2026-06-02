@@ -23,6 +23,7 @@ from app.utils.auth import login_required_seller,login_required_admin,login_requ
 from app.auth.routes import auth_bp
 from app.watches.routes import watches_bp
 from app.seller.routes import seller_bp
+from app.buyer.routes import buyer_bp
 from app.utils.context import load_logged_in_user
 
 app = Flask(__name__)
@@ -32,6 +33,7 @@ Session(app)
 app.register_blueprint(auth_bp)
 app.register_blueprint(watches_bp)
 app.register_blueprint(seller_bp)
+app.register_blueprint(buyer_bp)
 
 app.before_request(load_logged_in_user)
 
