@@ -1,7 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for
 
 from app.database import get_db
+from app.forms import MessageForm
 from app.utils.auth import login_required_admin
+from app.utils.time import send_current_time
 
 
 admin_bp = Blueprint("admin", __name__)
@@ -55,3 +57,51 @@ def reject(watch_id):
     )
     db.commit()
     return redirect(url_for("admin.admin"))
+
+
+@admin_bp.route("/help_admin")
+@login_required_admin
+def help_admin():
+    db = get_db()
+    respond_needed = db.execute("SELECT * FROM messages_to_response_buyer").fetchall()
+    return render_template("admin_help.html", respond_needed=respond_needed, title="Response")
+
+
+@admin_bp.route("/response/<int:message_id>", methods=["POST", "GET"])
+@login_required_admin
+def response(message_id):
+    form = MessageForm()
+    db = get_db()
+    previous_message = db.execute(
+        """SELECT * FROM messages_to_response_buyer
+           WHERE message_id = ?""",
+        (message_id,)
+    ).fetchone()
+
+    last_message = previous_message["message"]
+    last_date = previous_message["date"]
+    buyer_id = previous_message["buyer_id"]
+
+    if form.validate_on_submit():
+        message = form.message.data
+        date = send_current_time()
+        db.execute(
+            """INSERT INTO responded_messages_buyer
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (message_id, buyer_id, last_message, last_date, message, date)
+        )
+        db.execute(
+            """DELETE FROM messages_to_response_buyer
+               WHERE message_id = ?""",
+            (message_id,)
+        )
+        db.commit()
+        return redirect(url_for("admin.help_admin"))
+
+    return render_template(
+        "response.html",
+        title="response",
+        buyer_id=buyer_id,
+        last_message=last_message,
+        form=form,
+    )
