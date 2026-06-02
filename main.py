@@ -14,12 +14,12 @@ But to login as an administrator,the role should be 'admin', the user name is ad
 
 from flask import Flask,render_template,redirect,url_for,session,flash,get_flashed_messages,g,request
 from app.database import get_db,close_db
-from app.forms import EditBudget,EditPassword,BasketForm,MessageForm,CompareForm,QuestionForm
+from app.forms import EditBudget,EditPassword,BasketForm,MessageForm,QuestionForm
 from werkzeug.security import generate_password_hash,check_password_hash
 from flask_session import Session
 from datetime import datetime
 from config import Config
-from app.utils.auth import login_required_seller,login_required_admin,login_required_buyer
+from app.utils.auth import login_required_buyer
 from app.auth.routes import auth_bp
 from app.watches.routes import watches_bp
 from app.seller.routes import seller_bp
@@ -319,25 +319,6 @@ def seller_profile(user_id):
         return redirect(url_for('watches.main'))
     return render_template('seller_profile.html',seller_watches=seller_watches,user_id=user_id,form=form,reviews=reviews,blocked_sellers=blocked_sellers,title = 'Seller Profile')
 
-@app.route('/compare_watch/<int:watch_id>')
-# @login_required_buyer
-def compare_watch(watch_id):
-    watch1 = session.get('watch1')
-    watch2 = session.get('watch2')
-    if (watch1 == watch_id) or (watch2 == watch_id):
-        flash('You cannot compare the same watch')
-        return redirect(url_for('watches.main'))
-    if watch1  and watch2:
-        flash('You can compare only  2 watches at a time!')
-        return redirect(url_for('watches.main'))
-    
-    if not watch1:
-        session['watch1'] = watch_id
-    elif not watch2:
-        session['watch2'] = watch_id
-    return redirect(url_for('compare'))
-    
-
 @app.route('/help_buyer',methods = ['POST','GET'])
 @login_required_buyer
 def help_buyer():
@@ -356,31 +337,6 @@ def help_buyer():
             flash('Message was successfully sent!')
             return redirect(url_for('watches.main'))
     return render_template('help.html',form=form,responded_messages_buyer=responded_messages_buyer,title='Help')
-
-@app.route('/response/<int:message_id>',methods=['POST','GET'])
-@login_required_admin
-def response(message_id):
-    form = MessageForm()
-    db = get_db()
-    previous_message = db.execute('''SELECT * FROM messages_to_response_buyer
-                              WHERE message_id = ?''',(message_id,)).fetchone()
-    last_message = previous_message['message']
-    last_date = previous_message['date']
-    buyer_id = previous_message['buyer_id']
-    if form.validate_on_submit():
-        
-        message = form.message.data
-        date = send_current_time()
-        db.execute('''INSERT INTO responded_messages_buyer
-                   VALUES(?,?,?,?,?,?)''',
-                   (message_id,buyer_id,last_message,last_date,message,date))
-        db.execute('''DELETE FROM messages_to_response_buyer
-                   WHERE message_id = ?''',(message_id,))
-        db.commit()
-        return redirect(url_for('help_admin'))
-    return render_template('response.html',title = 'response',buyer_id=buyer_id,last_message=last_message,form=form)
-
-
 
 @app.route('/block_seller/<seller_id>')
 @login_required_buyer
