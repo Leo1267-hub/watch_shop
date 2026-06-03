@@ -1,7 +1,7 @@
 from flask import Blueprint, flash, get_flashed_messages, redirect, render_template, session, url_for
 
 from app.database import get_db
-from app.forms import BasketForm, EditBudget, EditPassword
+from app.forms import BasketForm, EditBudget, EditPassword, MessageForm, QuestionForm
 from app.utils.auth import login_required_buyer
 from app.utils.time import send_current_time
 
@@ -230,3 +230,234 @@ def remove_all(watch_id):
     session["basket"].pop(watch_id)
     session.modified = True
     return redirect(url_for("buyer.basket"))
+
+
+@buyer_bp.route("/add_to_favourite/<int:watch_id>")
+@login_required_buyer
+def add_to_favourite(watch_id):
+    user_id = session["buyer"]
+    db = get_db()
+    check = db.execute(
+        """SELECT * FROM favourite
+           WHERE watch_id = ? AND user_id = ?""",
+        (watch_id, user_id)
+    ).fetchone()
+
+    if check:
+        flash("You already have this watch in favourite")
+        return redirect(url_for("watches.main"))
+
+    db.execute(
+        """INSERT INTO favourite(user_id, watch_id)
+           VALUES (?, ?);""",
+        (user_id, watch_id)
+    )
+    db.commit()
+    return redirect(url_for("buyer.favourite"))
+
+
+@buyer_bp.route("/favourite", methods=["GET", "POST"])
+@login_required_buyer
+def favourite():
+    user_id = session["buyer"]
+    db = get_db()
+    favourite_to_check_if_exists = db.execute(
+        "SELECT * FROM favourite WHERE user_id = ?",
+        (user_id,)
+    ).fetchall()
+
+    favourite_that_exists = []
+    names = {}
+
+    for watch_dic in favourite_to_check_if_exists:
+        watch_id = watch_dic["watch_id"]
+        watch = db.execute(
+            """SELECT * FROM watches
+               WHERE watch_id = ?""",
+            (watch_id,)
+        ).fetchone()
+
+        if watch:
+            favourite_that_exists.append(watch_id)
+            names[watch_id] = {
+                "title": watch["title"],
+                "seller": watch["user_id"],
+                "watch_id": watch_id,
+            }
+
+        session.modified = True
+
+    return render_template(
+        "favourite.html",
+        title="favourite",
+        names=names,
+        favourite_that_exists=favourite_that_exists,
+    )
+
+
+@buyer_bp.route("/remove_from_favourite/<int:watch_id>")
+@login_required_buyer
+def remove_from_favourite(watch_id):
+    db = get_db()
+    user_id = session["buyer"]
+    db.execute(
+        """DELETE FROM favourite
+           WHERE watch_id = ? AND user_id = ?""",
+        (watch_id, user_id)
+    )
+    db.commit()
+    return redirect(url_for("buyer.favourite"))
+
+
+@buyer_bp.route("/seller_profile/<user_id>", methods=["POST", "GET"])
+@login_required_buyer
+def seller_profile(user_id):
+    form = MessageForm()
+    buyer_id = session["buyer"]
+    db = get_db()
+
+    check_if_user_exists = db.execute(
+        """SELECT * FROM seller
+           WHERE user_id = ?""",
+        (user_id,)
+    ).fetchone()
+
+    blocked_sellers = db.execute(
+        """SELECT * FROM blocked_sellers
+           WHERE buyer_id = ? AND seller_id = ?""",
+        (buyer_id, user_id)
+    ).fetchone()
+
+    if check_if_user_exists is not None:
+        seller_watches = db.execute(
+            "SELECT * FROM watches WHERE user_id = ?",
+            (user_id,)
+        ).fetchall()
+        reviews = db.execute(
+            """SELECT * FROM reviews
+               WHERE seller_id = ?""",
+            (user_id,)
+        ).fetchall()
+
+        if form.validate_on_submit():
+            review = form.message.data
+            date = send_current_time()
+            db.execute(
+                """INSERT INTO reviews(seller_id, buyer_id, review, date)
+                   VALUES (?, ?, ?, ?)""",
+                (user_id, buyer_id, review, date)
+            )
+            db.commit()
+            flash("Message was successfully sent!")
+            return redirect(url_for("watches.main"))
+    else:
+        flash(f"there is no such user {user_id}")
+        return redirect(url_for("watches.main"))
+
+    return render_template(
+        "seller_profile.html",
+        seller_watches=seller_watches,
+        user_id=user_id,
+        form=form,
+        reviews=reviews,
+        blocked_sellers=blocked_sellers,
+        title="Seller Profile",
+    )
+
+
+@buyer_bp.route("/block_seller/<seller_id>")
+@login_required_buyer
+def block_seller(seller_id):
+    buyer_id = session["buyer"]
+    db = get_db()
+    already_blocked = db.execute(
+        """SELECT * FROM blocked_sellers
+           WHERE seller_id = ?
+           AND buyer_id = ?""",
+        (seller_id, buyer_id)
+    ).fetchone()
+
+    if not already_blocked:
+        db.execute(
+            "INSERT INTO blocked_sellers VALUES (?, ?)",
+            (buyer_id, seller_id)
+        )
+        db.commit()
+        return redirect(url_for("buyer.seller_profile", user_id=seller_id))
+
+    flash(f"{seller_id} is already blocked!")
+    return redirect(url_for("watches.main"))
+
+
+@buyer_bp.route("/unblock_seller/<seller_id>")
+@login_required_buyer
+def unblock_seller(seller_id):
+    db = get_db()
+    buyer_id = session["buyer"]
+    already_blocked = db.execute(
+        """SELECT * FROM blocked_sellers
+           WHERE seller_id = ?
+           AND buyer_id = ?""",
+        (seller_id, buyer_id)
+    ).fetchone()
+
+    if already_blocked:
+        db.execute(
+            "DELETE FROM blocked_sellers WHERE seller_id = ? AND buyer_id = ?",
+            (seller_id, buyer_id)
+        )
+        db.commit()
+        return redirect(url_for("buyer.seller_profile", user_id=seller_id))
+
+    flash(f"{seller_id} isn't blocked")
+    return redirect(url_for("watches.main"))
+
+
+@buyer_bp.route("/blocked_sellers")
+@login_required_buyer
+def blocked_sellers():
+    db = get_db()
+    buyer_id = session["buyer"]
+    blocked_sellers = db.execute(
+        """SELECT * FROM blocked_sellers
+           WHERE buyer_id = ?""",
+        (buyer_id,)
+    ).fetchall()
+    return render_template(
+        "blocked_sellers.html",
+        blocked_sellers=blocked_sellers,
+        title="blocked sellers",
+    )
+
+
+@buyer_bp.route("/help_buyer", methods=["POST", "GET"])
+@login_required_buyer
+def help_buyer():
+    form = QuestionForm()
+    db = get_db()
+    user_id = session["buyer"]
+    responded_messages_buyer = db.execute(
+        """SELECT * FROM responded_messages_buyer
+           WHERE buyer_id = ?
+           ORDER BY date DESC;""",
+        (user_id,)
+    ).fetchall()
+
+    if form.validate_on_submit():
+        message = form.message.data
+        date = send_current_time()
+        db.execute(
+            """INSERT INTO messages_to_response_buyer(buyer_id, message, date)
+               VALUES (?, ?, ?)""",
+            (user_id, message, date)
+        )
+        db.commit()
+        flash("Message was successfully sent!")
+        return redirect(url_for("watches.main"))
+
+    return render_template(
+        "help.html",
+        form=form,
+        responded_messages_buyer=responded_messages_buyer,
+        title="Help",
+    )
