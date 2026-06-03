@@ -23,12 +23,12 @@
     <aside class="sidebar">
         <nav>
             <a href="{{ url_for('watches.main') }}">Catalog<i class='bx bxs-watch'></i></a>
-            <a href="{{ url_for('profile') }}">Profile<i class='bx bx-user-circle'></i></a>
-            <a href="{{ url_for('basket') }}">Basket<i class='bx bx-basket'></i></a>
-            <a href="{{ url_for('favourite') }}">Favourite<i class='bx bxs-heart'></i></a>
+            <a href="{{ url_for('buyer.profile') }}">Profile<i class='bx bx-user-circle'></i></a>
+            <a href="{{ url_for('buyer.basket') }}">Basket<i class='bx bx-basket'></i></a>
+            <a href="{{ url_for('buyer.favourite') }}">Favourite<i class='bx bxs-heart'></i></a>
             <a href="{{ url_for('watches.compare') }}">Compare<i class='bx bx-git-compare'></i></a>
-            <a href="{{ url_for('help_buyer') }}">Help<i class='bx bx-help-circle'></i></a>
-            <a href="{{ url_for('blocked_sellers') }}">Blocked Sellers<i class='bx bx-block'></i> </a>
+            <a href="{{ url_for('buyer.help_buyer') }}">Help<i class='bx bx-help-circle'></i></a>
+            <a href="{{ url_for('buyer.blocked_sellers') }}">Blocked Sellers<i class='bx bx-block'></i> </a>
         </nav>
     </aside>
 
@@ -48,13 +48,13 @@
                     <p class="price">{{ watch['price'] }}€</p>
                     <p class="quantity">Quantity: {{ watch['quantity'] }}</p>
                     <p class="seller">
-                        <a href="{{ url_for('seller_profile', user_id=watch['user_id']) }}">Seller: {{ watch['user_id']
+                        <a href="{{ url_for('buyer.seller_profile', user_id=watch['user_id']) }}">Seller: {{ watch['user_id']
                             }}</a>
                     </p>
                     <div class="link_group">
-                        <a href="{{ url_for('add_to_basket', watch_id=watch['watch_id']) }}" class="btn">Add to
+                        <a href="{{ url_for('buyer.add_to_basket', watch_id=watch['watch_id']) }}" class="btn">Add to
                             Basket</a>
-                        <a href="{{ url_for('add_to_favourite', watch_id=watch['watch_id']) }}" class="btn">Add to
+                        <a href="{{ url_for('buyer.add_to_favourite', watch_id=watch['watch_id']) }}" class="btn">Add to
                             Favourite</a>
                     </div>
                 </div>

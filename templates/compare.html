@@ -11,12 +11,12 @@
     <aside class="sidebar">
         <nav>
             <a href="{{ url_for('watches.main') }}">Catalog <i class='bx bxs-watch'></i></a>
-            <a href="{{ url_for('profile') }}">Profile <i class='bx bx-user-circle'></i></a>
-            <a href="{{ url_for('basket') }}">Basket <i class='bx bx-basket'></i></a>
-            <a href="{{ url_for('favourite') }}">Favourite <i class='bx bxs-heart'></i></a>
+            <a href="{{ url_for('buyer.profile') }}">Profile <i class='bx bx-user-circle'></i></a>
+            <a href="{{ url_for('buyer.basket') }}">Basket <i class='bx bx-basket'></i></a>
+            <a href="{{ url_for('buyer.favourite') }}">Favourite <i class='bx bxs-heart'></i></a>
             <a href="{{ url_for('watches.compare') }}">Compare <i class='bx bx-git-compare'></i></a>
-            <a href="{{ url_for('help_buyer') }}">Help <i class='bx bx-help-circle'></i></a>
-            <a href="{{ url_for('blocked_sellers') }}">Blocked Sellers <i class='bx bx-block'></i></a>
+            <a href="{{ url_for('buyer.help_buyer') }}">Help <i class='bx bx-help-circle'></i></a>
+            <a href="{{ url_for('buyer.blocked_sellers') }}">Blocked Sellers <i class='bx bx-block'></i></a>
         </nav>
     </aside>
 
@@ -134,13 +134,13 @@
             </tr>
             <tr>
                 <th rowspan="2">Actions</th>
-                <td><a class="action" href="{{ url_for('add_to_basket', watch_id=watch1) }}">Add to Basket</a></td>
-                <td><a class="action" href="{{ url_for('add_to_basket', watch_id=watch2) }}">Add to Basket</a></td>
+                <td><a class="action" href="{{ url_for('buyer.add_to_basket', watch_id=watch1) }}">Add to Basket</a></td>
+                <td><a class="action" href="{{ url_for('buyer.add_to_basket', watch_id=watch2) }}">Add to Basket</a></td>
             </tr>
             <tr>
-                <td><a class="action" href="{{ url_for('add_to_favourite', watch_id=watch1) }}">Add to Favourite</a>
+                <td><a class="action" href="{{ url_for('buyer.add_to_favourite', watch_id=watch1) }}">Add to Favourite</a>
                 </td>
-                <td><a class="action" href="{{ url_for('add_to_favourite', watch_id=watch2) }}">Add to Favourite</a>
+                <td><a class="action" href="{{ url_for('buyer.add_to_favourite', watch_id=watch2) }}">Add to Favourite</a>
                 </td>
             </tr>
             {% elif watch1 or watch2 %}

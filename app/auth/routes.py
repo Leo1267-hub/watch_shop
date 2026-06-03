@@ -19,7 +19,7 @@ def login():
         # Admin login handled separately
         if role == "admin":
             if user_id == "admin":
-                if password == "0621":
+                if password == "1357":
                     session.clear()
                     session["admin"] = user_id
                     return redirect(url_for("admin.admin"))

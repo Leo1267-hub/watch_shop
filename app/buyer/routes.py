@@ -2,6 +2,7 @@ from flask import Blueprint, flash, get_flashed_messages, redirect, render_templ
 
 from app.database import get_db
 from app.forms import BasketForm, EditBudget, EditPassword, MessageForm, QuestionForm
+from werkzeug.security import generate_password_hash, check_password_hash
 from app.utils.auth import login_required_buyer
 from app.utils.time import send_current_time
 
@@ -460,4 +461,45 @@ def help_buyer():
         form=form,
         responded_messages_buyer=responded_messages_buyer,
         title="Help",
+    )
+
+@buyer_bp.route("/change_password", methods=["GET", "POST"])
+@login_required_buyer
+def change_password():
+    message = ""
+    form_budget = EditBudget()
+    form_password = EditPassword()
+    db = get_db()
+
+    user = db.execute(
+        "SELECT * FROM buyer WHERE user_id = ?",
+        (session["buyer"],)
+    ).fetchone()
+
+    budget = user["budget"]
+    user_id = session["buyer"]
+
+    if form_password.validate_on_submit():
+        password = user["password"]
+        password_to_check = form_password.password_to_check.data
+
+        if not check_password_hash(password, password_to_check):
+            form_password.password_to_check.errors.append("wrong password")
+        else:
+            new_password = generate_password_hash(form_password.new_password.data)
+            db.execute(
+                "UPDATE buyer SET password = ? WHERE user_id = ?",
+                (new_password, user_id)
+            )
+            db.commit()
+            message = "successful!"
+            return redirect(url_for("buyer.profile"))
+
+    return render_template(
+        "profile.html",
+        title="Profile",
+        budget=budget,
+        form_password=form_password,
+        message=message,
+        form_budget=form_budget,
     )

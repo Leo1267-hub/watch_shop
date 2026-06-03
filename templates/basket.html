@@ -11,12 +11,12 @@
     <aside class="sidebar">
         <nav>
             <a href="{{ url_for('watches.main') }}">Catalog <i class='bx bxs-watch'></i></a>
-            <a href="{{ url_for('profile') }}">Profile <i class='bx bx-user-circle'></i></a>
-            <a href="{{ url_for('basket') }}">Basket <i class='bx bx-basket'></i></a>
-            <a href="{{ url_for('favourite') }}">Favourite <i class='bx bxs-heart'></i></a>
+            <a href="{{ url_for('buyer.profile') }}">Profile <i class='bx bx-user-circle'></i></a>
+            <a href="{{ url_for('buyer.basket') }}">Basket <i class='bx bx-basket'></i></a>
+            <a href="{{ url_for('buyer.favourite') }}">Favourite <i class='bx bxs-heart'></i></a>
             <a href="{{ url_for('watches.compare') }}">Compare <i class='bx bx-git-compare'></i></a>
-            <a href="{{ url_for('help_buyer') }}">Help <i class='bx bx-help-circle'></i></a>
-            <a href="{{ url_for('blocked_sellers') }}">Blocked Sellers <i class='bx bx-block'></i></a>
+            <a href="{{ url_for('buyer.help_buyer') }}">Help <i class='bx bx-help-circle'></i></a>
+            <a href="{{ url_for('buyer.blocked_sellers') }}">Blocked Sellers <i class='bx bx-block'></i></a>
         </nav>
     </aside>
 
@@ -36,12 +36,12 @@
                 <tr>
                     <td>{{ names[watch_id] }}</td>
                     <td>{{ basket[watch_id]['quantity'] }}</td>
-                    <td><a class="btn" id="remove" href="{{ url_for('remove_from_basket', watch_id=watch_id) }}">Remove
+                    <td><a class="btn" id="remove" href="{{ url_for('buyer.remove_from_basket', watch_id=watch_id) }}">Remove
                             one</a>
                     </td>
-                    <td><a class="btn" id="add" href="{{ url_for('add_one_to_basket', watch_id=watch_id) }}">Add one</a>
+                    <td><a class="btn" id="add" href="{{ url_for('buyer.add_one_to_basket', watch_id=watch_id) }}">Add one</a>
                     </td>
-                    <td><a class="btn" id="remove_all" href="{{ url_for('remove_all', watch_id=watch_id) }}">Remove
+                    <td><a class="btn" id="remove_all" href="{{ url_for('buyer.remove_all', watch_id=watch_id) }}">Remove
                             all</a>
                     </td>
                 </tr>
