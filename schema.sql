@@ -77,7 +77,7 @@ CREATE TABLE selling_history
     description TEXT NOT NULL,
     quantity INTEGER NOT NULL,
     watch_picture blob,
-    date DATE NOT NULL,
+    date TEXT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES seller(user_id),
     FOREIGN KEY(watch_id) REFERENCES watches(watch_id),
     FOREIGN KEY(buyer_id) REFERENCES buyer(user_id)
@@ -91,7 +91,7 @@ CREATE TABLE reviews
     buyer_id TEXT NOT NULL,
     review TEXT NOT NULL,
     review_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date DATE NOT NULL,
+    date TEXT NOT NULL,
     FOREIGN KEY(seller_id) REFERENCES seller(user_id),
     FOREIGN KEY(buyer_id) REFERENCES buyer(user_id)
 );
@@ -104,7 +104,7 @@ CREATE TABLE messages_to_response_buyer
     message_id INTEGER PRIMARY KEY AUTOINCREMENT,
     buyer_id TEXT NOT NULL,
     message TEXT NOT NULL,
-    date DATE NOT NULL,
+    date TEXT NOT NULL,
     FOREIGN KEY(buyer_id) REFERENCES seller(buyer_id)
 );
 
@@ -115,9 +115,9 @@ CREATE TABLE responded_messages_buyer
     message_id INTEGER PRIMARY KEY,
     buyer_id TEXT NOT NULL,
     last_message TEXT NOT NULL,
-    last_date DATE NOT NULL,
+    last_date TEXT NOT NULL,
     message TEXT NOT NULL,
-    date DATE NOT NULL,
+    date TEXT NOT NULL,
     FOREIGN KEY(buyer_id) REFERENCES buyer(buyer_id)
 );
 
