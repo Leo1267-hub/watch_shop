@@ -147,7 +147,7 @@ Admin login:
 ```text
 Role: admin
 Username: admin
-Password: 0621
+Password: 1357
 ```
 
 You can also register buyer and seller accounts through the registration page.
