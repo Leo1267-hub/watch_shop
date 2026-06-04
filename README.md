@@ -41,6 +41,9 @@ watch_shop/
 │   └── forms.py
 ├── templates/
 ├── static/
+├── schema.sql
+├── init_db.py
+├── seed.py
 ├── config.py
 ├── main.py
 ├── run.py
@@ -116,17 +119,18 @@ If `requirements.txt` is not available yet, install the main packages manually:
 pip install flask flask-wtf flask-session werkzeug
 ```
 
-### 5. Add the local database
+### 5. Create and seed the database
 
-This project uses a local SQLite database file called `app.db`.
+This project uses SQLite. The local database file `app.db` is ignored by Git, so create it locally with:
 
-The database file is not committed to GitHub because it is ignored in `.gitignore`.
-
-For local development, make sure `app.db` exists in the project root:
-
-```text
-watch_shop/app.db
+```bash
+python init_db.py
+python seed.py
 ```
+
+`init_db.py` creates the database tables from `schema.sql`.
+
+`seed.py` inserts demo buyer, seller, watch, review, and support-message data.
 
 ### 6. Run the application
 
@@ -150,7 +154,23 @@ Username: admin
 Password: 1357
 ```
 
-You can also register buyer and seller accounts through the registration page.
+Demo buyer:
+
+```text
+Role: buyer
+Username: demo_buyer
+Password: password123
+```
+
+Demo seller:
+
+```text
+Role: seller
+Username: demo_seller
+Password: password123
+```
+
+You can also register new buyer and seller accounts through the registration page.
 
 ## Notes
 
@@ -160,7 +180,6 @@ You can also register buyer and seller accounts through the registration page.
 
 ## Future Improvements
 
-- Add `schema.sql` and a database seed script
 - Add automated tests with `pytest`
 - Add deployment configuration
 - Improve form validation and error handling
