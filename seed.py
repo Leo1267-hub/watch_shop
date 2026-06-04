@@ -6,6 +6,11 @@ from werkzeug.security import generate_password_hash
 BASE_DIR = Path(__file__).resolve().parent
 DATABASE = BASE_DIR / "app.db"
 
+def read_image(filename):
+    image_path = BASE_DIR / "static" / "demo_watches" / filename
+    with open(image_path, "rb") as file:
+        return file.read()
+
 
 def seed_db():
     if not DATABASE.exists():
@@ -23,11 +28,10 @@ def seed_db():
         ("demo_buyer", generate_password_hash("password123"), 2500),
     )
 
-    demo_image = b""
     watches = [
-        ("demo_seller", "Seiko", 220.0, 40.0, "Steel", 145.0, "Automatic everyday watch", 5, demo_image),
-        ("demo_seller", "Casio", 75.0, 38.0, "Resin", 55.0, "Digital retro watch", 8, demo_image),
-        ("demo_seller", "Tissot", 480.0, 42.0, "Steel", 160.0, "Swiss dress watch", 3, demo_image),
+        ("demo_seller", "Seiko", 220.0, 40.0, "Steel", 145.0, "Automatic everyday watch", 5, read_image("seiko.jpg")),
+        ("demo_seller", "Fosil", 75.0, 38.0, "Steel", 55.0, "Nice looking watch", 8, read_image("fosil3.jpg")),
+        ("demo_seller", "Tissot", 480.0, 42.0, "Steel", 160.0, "Swiss dress watch", 3, read_image("tissot.jpg")),
     ]
 
     cursor.executemany(
