@@ -1,4 +1,4 @@
-from flask import Blueprint, flash, get_flashed_messages, redirect, render_template, session, url_for
+from flask import Blueprint, flash, redirect, render_template, session, url_for
 
 from app.database import get_db
 from app.forms import BasketForm, EditBudget, EditPassword, MessageForm, QuestionForm
@@ -69,7 +69,6 @@ def profile():
 @login_required_buyer
 def basket():
     form = BasketForm()
-    message = get_flashed_messages()
     message_to_pay = ""
 
     _ensure_basket()
@@ -196,7 +195,6 @@ def basket():
         "basket.html",
         basket=session["basket"],
         title="Basket",
-        message=message,
         total_cost=total_cost,
         names=names,
         form=form,
