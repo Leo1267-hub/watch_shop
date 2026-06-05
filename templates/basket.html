@@ -79,17 +79,6 @@
         {% else %}
         <p class="message">Your basket is empty🗑️</p>
         {% endif %}
-        <!-- code taken from here -->
-        <!-- https://flask.palletsprojects.com/en/stable/patterns/flashing/ -->
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <div class="flash_messages">
-            {% for message in messages %}
-            <p class="error">{{ message }}</p>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
     </main>
 </div>
 
