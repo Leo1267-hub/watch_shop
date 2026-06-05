@@ -17,15 +17,6 @@
 
     <main>
         <h1>Admin</h1>
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <div class="alert">
-            {% for message in messages %}
-            <p class="message">{{ message }}!</p>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
 
         <div class="watch_list">
             <h2>Watches to Review</h2>
