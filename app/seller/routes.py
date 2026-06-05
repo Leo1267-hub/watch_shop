@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, session
+from flask import Blueprint, flash, render_template, redirect, url_for, session
 
 from app.database import get_db
 from app.forms import EditWatch, SellerForm
@@ -101,6 +101,14 @@ def edit_watch(watch_id):
            WHERE watch_id = ?""",
         (watch_id,)
     ).fetchone()
+    
+    if watch is None:
+        flash("Watch not found")
+        return redirect(url_for("watches.main"))
+    
+    if watch["user_id"] != session["seller"]:
+        flash("You are not allowed to edit this watch")
+        return redirect(url_for("seller.seller"))
 
     title = watch["title"]
     price = watch["price"]
