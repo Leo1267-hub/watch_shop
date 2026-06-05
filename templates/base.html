@@ -28,6 +28,17 @@
         <p><a href="{{url_for('auth.login')}}">Login</a></p>
         {%endif%}
     </header>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <section class="flash-messages">
+                {% for message in messages %}
+                    <p class="flash-message">{{ message }}</p>
+                {% endfor %}
+            </section>
+        {% endif %}
+    {% endwith %}
+
     {%block main_content%}
 
     {%endblock%}
