@@ -14,6 +14,7 @@ A full-stack e-commerce web application for buying and selling watches. The proj
 - Buyer support messages and admin responses
 - Modular Flask Blueprint architecture
 - SQLite database integration
+- Automated tests with pytest
 
 ## Tech Stack
 
@@ -22,6 +23,7 @@ A full-stack e-commerce web application for buying and selling watches. The proj
 - Flask-WTF
 - Flask-Session
 - SQLite
+- Pytest
 - HTML
 - CSS
 - Jinja2 templates
@@ -41,6 +43,10 @@ watch_shop/
 │   └── forms.py
 ├── templates/
 ├── static/
+├── tests/
+│   ├── conftest.py
+│   ├── test_database.py
+│   └── test_routes.py
 ├── schema.sql
 ├── init_db.py
 ├── seed.py
@@ -116,7 +122,7 @@ pip install -r requirements.txt
 If `requirements.txt` is not available yet, install the main packages manually:
 
 ```bash
-pip install flask flask-wtf flask-session werkzeug
+pip install flask flask-wtf flask-session werkzeug pytest
 ```
 
 ### 5. Create and seed the database
@@ -143,6 +149,16 @@ Then open the local Flask URL in your browser:
 ```text
 http://127.0.0.1:5000
 ```
+
+## Running Tests
+
+Run the automated test suite with:
+
+```bash
+pytest
+```
+
+The tests check that key routes load correctly, protected pages redirect unauthenticated users to login, and the database schema creates the required tables.
 
 ## Demo Login Details
 
@@ -180,7 +196,6 @@ You can also register new buyer and seller accounts through the registration pag
 
 ## Future Improvements
 
-- Add automated tests with `pytest`
 - Add deployment configuration
 - Improve form validation and error handling
 - Add image upload validation
