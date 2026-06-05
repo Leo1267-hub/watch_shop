@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, flash, render_template, redirect, url_for
 
 from app.database import get_db
 from app.forms import MessageForm
@@ -26,6 +26,10 @@ def accept(watch_id):
         (watch_id,)
     ).fetchone()
 
+    if watch is None:
+        flash("Pending watch not found")
+        return redirect(url_for("admin.admin"))
+
     db.execute(
         """INSERT INTO watches
            (user_id, title, price, size, material, weight, description, quantity, watch_picture)
@@ -42,20 +46,35 @@ def accept(watch_id):
             watch["watch_picture"],
         )
     )
+    db.execute(
+        "DELETE FROM watches_to_check WHERE watch_id = ?",
+        (watch_id,)
+    )
     db.commit()
+    flash("Watch approved")
 
-    return redirect(url_for("admin.reject", watch_id=watch_id))
+    return redirect(url_for("admin.admin"))
 
 
 @admin_bp.route("/reject/<int:watch_id>")
 @login_required_admin
 def reject(watch_id):
     db = get_db()
+    watch = db.execute(
+        "SELECT * FROM watches_to_check WHERE watch_id = ?",
+        (watch_id,)
+    ).fetchone()
+
+    if watch is None:
+        flash("Pending watch not found")
+        return redirect(url_for("admin.admin"))
+
     db.execute(
         "DELETE FROM watches_to_check WHERE watch_id = ?",
         (watch_id,)
     )
     db.commit()
+    flash("Watch rejected")
     return redirect(url_for("admin.admin"))
 
 
@@ -78,12 +97,20 @@ def response(message_id):
         (message_id,)
     ).fetchone()
 
+    if previous_message is None:
+        flash("Message not found")
+        return redirect(url_for("admin.help_admin"))
+
     last_message = previous_message["message"]
     last_date = previous_message["date"]
     buyer_id = previous_message["buyer_id"]
 
     if form.validate_on_submit():
-        message = form.message.data
+        message = form.message.data.strip()
+        if not message:
+            flash("Response cannot be empty")
+            return redirect(url_for("admin.response", message_id=message_id))
+
         date = send_current_time()
         db.execute(
             """INSERT INTO responded_messages_buyer
@@ -96,6 +123,7 @@ def response(message_id):
             (message_id,)
         )
         db.commit()
+        flash("Response sent")
         return redirect(url_for("admin.help_admin"))
 
     return render_template(
