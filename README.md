@@ -58,7 +58,6 @@ watch_shop/
 
 ## Screenshots
 
-Create a folder called `docs/screenshots/` and add your screenshots there.
 
 ### Catalogue Page
 
