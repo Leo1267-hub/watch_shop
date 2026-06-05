@@ -10,6 +10,18 @@ from app.utils.time import send_current_time
 buyer_bp = Blueprint("buyer", __name__)
 
 
+def _get_watch(db, watch_id):
+    return db.execute(
+        "SELECT * FROM watches WHERE watch_id = ?",
+        (watch_id,)
+    ).fetchone()
+
+
+def _ensure_basket():
+    if "basket" not in session:
+        session["basket"] = {}
+
+
 @buyer_bp.route("/profile", methods=["GET", "POST"])
 @login_required_buyer
 def profile():
@@ -24,6 +36,12 @@ def profile():
            WHERE user_id = ?""",
         (user_id,)
     ).fetchone()
+
+    if user is None:
+        session.clear()
+        flash("Buyer account was not found. Please log in again.")
+        return redirect(url_for("auth.login"))
+
     budget = round(user["budget"], 2)
 
     if form_budget.validate_on_submit():
@@ -34,6 +52,8 @@ def profile():
             (budget, user_id)
         )
         db.commit()
+        flash("Budget updated")
+        return redirect(url_for("buyer.profile"))
 
     return render_template(
         "profile.html",
@@ -52,51 +72,70 @@ def basket():
     message = get_flashed_messages()
     message_to_pay = ""
 
-    if "basket" not in session:
-        session["basket"] = {}
-
+    _ensure_basket()
     names = {}
     db = get_db()
 
-    for watch_id in session["basket"]:
-        watch = db.execute(
-            """SELECT * FROM watches
-               WHERE watch_id = ?;""",
-            (watch_id,)
-        ).fetchone()
+    invalid_watch_ids = []
+    for watch_id in list(session["basket"].keys()):
+        watch = _get_watch(db, watch_id)
+        if watch is None:
+            invalid_watch_ids.append(watch_id)
+            continue
+
+        basket_quantity = session["basket"][watch_id]["quantity"]
+        if basket_quantity > watch["quantity"]:
+            session["basket"][watch_id]["quantity"] = watch["quantity"]
+            session["basket"][watch_id]["price"] = watch["price"] * watch["quantity"]
+            flash(f"Basket quantity for {watch['title']} was reduced to available stock")
+
         names[watch_id] = watch["title"]
+
+    for watch_id in invalid_watch_ids:
+        session["basket"].pop(watch_id, None)
+        flash("A watch was removed from your basket because it no longer exists")
 
     total_cost = sum(item["price"] for item in session["basket"].values())
     total_cost = round(total_cost, 2)
 
     if form.validate_on_submit():
+        if not session["basket"]:
+            flash("Your basket is empty")
+            return redirect(url_for("buyer.basket"))
+
         budget_sql = db.execute(
             """SELECT budget FROM buyer
                WHERE user_id = ?""",
             (session["buyer"],)
         ).fetchone()
+
+        if budget_sql is None:
+            session.clear()
+            flash("Buyer account was not found. Please log in again.")
+            return redirect(url_for("auth.login"))
+
         budget = budget_sql["budget"]
 
         if total_cost > budget:
-            money_needed = total_cost - budget
+            money_needed = round(total_cost - budget, 2)
             message_to_pay = f"you need {money_needed}€ more to complete purchase"
         else:
-            budget -= total_cost
-            db.execute(
-                """UPDATE buyer SET budget = ?
-                   WHERE user_id = ?""",
-                (budget, session["buyer"])
-            )
-
             watch_ids_to_remove = [watch_id for watch_id in session["basket"]]
+
             for watch_id in watch_ids_to_remove:
-                watch = db.execute(
-                    """SELECT * FROM watches
-                       WHERE watch_id = ?;""",
-                    (watch_id,)
-                ).fetchone()
+                watch = _get_watch(db, watch_id)
+                if watch is None:
+                    session["basket"].pop(watch_id, None)
+                    flash("A watch was removed from your basket because it no longer exists")
+                    continue
 
                 quantity = watch["quantity"]
+                quantity_in_basket = session["basket"][watch_id]["quantity"]
+
+                if quantity_in_basket > quantity:
+                    flash(f"Only {quantity} left in stock for {watch['title']}")
+                    return redirect(url_for("buyer.basket"))
+
                 seller_id = watch["user_id"]
                 title = watch["title"]
                 size = watch["size"]
@@ -105,7 +144,6 @@ def basket():
                 description = watch["description"]
                 watch_picture = watch["watch_picture"]
                 date = send_current_time()
-                quantity_in_basket = session["basket"][watch_id]["quantity"]
                 new_quantity = quantity - quantity_in_basket
                 price_for_watch_id = session["basket"][watch_id]["price"]
 
@@ -130,6 +168,7 @@ def basket():
 
                 if new_quantity == 0:
                     db.execute("DELETE FROM watches WHERE watch_id = ?", (watch_id,))
+                    db.execute("DELETE FROM favourite WHERE watch_id = ?", (watch_id,))
                 else:
                     db.execute(
                         "UPDATE watches SET quantity = ? WHERE watch_id = ?",
@@ -140,10 +179,17 @@ def basket():
                     "UPDATE seller SET income = income + ? WHERE user_id = ?",
                     (price_for_watch_id, seller_id)
                 )
-                session["basket"].pop(watch_id)
+                session["basket"].pop(watch_id, None)
+                budget -= price_for_watch_id
 
+            db.execute(
+                """UPDATE buyer SET budget = ?
+                   WHERE user_id = ?""",
+                (budget, session["buyer"])
+            )
             db.commit()
-            return redirect(url_for("auth.logout"))
+            flash("Purchase completed successfully")
+            return redirect(url_for("buyer.basket"))
 
     session.modified = True
     return render_template(
@@ -162,14 +208,21 @@ def basket():
 @login_required_buyer
 def add_to_basket(watch_id):
     db = get_db()
-    watch = db.execute(
-        """SELECT quantity, price FROM watches
-           WHERE watch_id = ?;""",
-        (watch_id,)
-    ).fetchone()
+    watch = _get_watch(db, watch_id)
 
-    if "basket" not in session:
-        session["basket"] = {}
+    if watch is None:
+        flash("Watch not found")
+        return redirect(url_for("watches.main"))
+
+    if watch["quantity"] <= 0:
+        flash("This watch is out of stock")
+        return redirect(url_for("watches.main"))
+
+    if watch["user_id"] == session["buyer"]:
+        flash("You cannot buy your own watch")
+        return redirect(url_for("watches.main"))
+
+    _ensure_basket()
 
     if watch_id not in session["basket"]:
         session["basket"][watch_id] = {"quantity": 1, "price": watch["price"]}
@@ -182,6 +235,7 @@ def add_to_basket(watch_id):
         session["basket"][watch_id]["price"] += watch["price"]
 
     session.modified = True
+    flash("Watch added to basket")
     return redirect(url_for("buyer.basket"))
 
 
@@ -189,17 +243,25 @@ def add_to_basket(watch_id):
 @login_required_buyer
 def add_one_to_basket(watch_id):
     db = get_db()
-    watch = db.execute(
-        """SELECT quantity, price FROM watches
-           WHERE watch_id = ?;""",
-        (watch_id,)
-    ).fetchone()
+    _ensure_basket()
+
+    if watch_id not in session["basket"]:
+        flash("Watch is not in your basket")
+        return redirect(url_for("buyer.basket"))
+
+    watch = _get_watch(db, watch_id)
+    if watch is None:
+        session["basket"].pop(watch_id, None)
+        session.modified = True
+        flash("Watch no longer exists")
+        return redirect(url_for("buyer.basket"))
 
     if session["basket"][watch_id]["quantity"] >= watch["quantity"]:
         flash(f"Only {watch['quantity']} left in stock")
     else:
         session["basket"][watch_id]["quantity"] += 1
         session["basket"][watch_id]["price"] += watch["price"]
+        flash("Basket updated")
 
     session.modified = True
     return redirect(url_for("buyer.basket"))
@@ -209,27 +271,42 @@ def add_one_to_basket(watch_id):
 @login_required_buyer
 def remove_from_basket(watch_id):
     db = get_db()
-    watch = db.execute(
-        """SELECT quantity, price FROM watches
-           WHERE watch_id = ?;""",
-        (watch_id,)
-    ).fetchone()
+    _ensure_basket()
+
+    if watch_id not in session["basket"]:
+        flash("Watch is not in your basket")
+        return redirect(url_for("buyer.basket"))
+
+    watch = _get_watch(db, watch_id)
+    if watch is None:
+        session["basket"].pop(watch_id, None)
+        session.modified = True
+        flash("Watch no longer exists")
+        return redirect(url_for("buyer.basket"))
 
     if session["basket"][watch_id]["quantity"] > 1:
         session["basket"][watch_id]["quantity"] -= 1
         session["basket"][watch_id]["price"] -= watch["price"]
     else:
-        session["basket"].pop(watch_id)
+        session["basket"].pop(watch_id, None)
 
     session.modified = True
+    flash("Basket updated")
     return redirect(url_for("buyer.basket"))
 
 
 @buyer_bp.route("/remove_all/<int:watch_id>")
 @login_required_buyer
 def remove_all(watch_id):
-    session["basket"].pop(watch_id)
+    _ensure_basket()
+
+    if watch_id not in session["basket"]:
+        flash("Watch is not in your basket")
+        return redirect(url_for("buyer.basket"))
+
+    session["basket"].pop(watch_id, None)
     session.modified = True
+    flash("Watch removed from basket")
     return redirect(url_for("buyer.basket"))
 
 
@@ -238,6 +315,12 @@ def remove_all(watch_id):
 def add_to_favourite(watch_id):
     user_id = session["buyer"]
     db = get_db()
+    watch = _get_watch(db, watch_id)
+
+    if watch is None:
+        flash("Watch not found")
+        return redirect(url_for("watches.main"))
+
     check = db.execute(
         """SELECT * FROM favourite
            WHERE watch_id = ? AND user_id = ?""",
@@ -254,6 +337,7 @@ def add_to_favourite(watch_id):
         (user_id, watch_id)
     )
     db.commit()
+    flash("Watch added to favourites")
     return redirect(url_for("buyer.favourite"))
 
 
@@ -272,11 +356,7 @@ def favourite():
 
     for watch_dic in favourite_to_check_if_exists:
         watch_id = watch_dic["watch_id"]
-        watch = db.execute(
-            """SELECT * FROM watches
-               WHERE watch_id = ?""",
-            (watch_id,)
-        ).fetchone()
+        watch = _get_watch(db, watch_id)
 
         if watch:
             favourite_that_exists.append(watch_id)
@@ -285,8 +365,13 @@ def favourite():
                 "seller": watch["user_id"],
                 "watch_id": watch_id,
             }
-
-        session.modified = True
+        else:
+            db.execute(
+                "DELETE FROM favourite WHERE user_id = ? AND watch_id = ?",
+                (user_id, watch_id)
+            )
+            db.commit()
+            flash("A favourite was removed because the watch no longer exists")
 
     return render_template(
         "favourite.html",
@@ -301,12 +386,23 @@ def favourite():
 def remove_from_favourite(watch_id):
     db = get_db()
     user_id = session["buyer"]
+    favourite = db.execute(
+        """SELECT * FROM favourite
+           WHERE watch_id = ? AND user_id = ?""",
+        (watch_id, user_id)
+    ).fetchone()
+
+    if favourite is None:
+        flash("Watch is not in your favourites")
+        return redirect(url_for("buyer.favourite"))
+
     db.execute(
         """DELETE FROM favourite
            WHERE watch_id = ? AND user_id = ?""",
         (watch_id, user_id)
     )
     db.commit()
+    flash("Watch removed from favourites")
     return redirect(url_for("buyer.favourite"))
 
 
@@ -317,11 +413,15 @@ def seller_profile(user_id):
     buyer_id = session["buyer"]
     db = get_db()
 
-    check_if_user_exists = db.execute(
+    seller_user = db.execute(
         """SELECT * FROM seller
            WHERE user_id = ?""",
         (user_id,)
     ).fetchone()
+
+    if seller_user is None:
+        flash(f"There is no seller with username {user_id}")
+        return redirect(url_for("watches.main"))
 
     blocked_sellers = db.execute(
         """SELECT * FROM blocked_sellers
@@ -329,31 +429,35 @@ def seller_profile(user_id):
         (buyer_id, user_id)
     ).fetchone()
 
-    if check_if_user_exists is not None:
-        seller_watches = db.execute(
-            "SELECT * FROM watches WHERE user_id = ?",
-            (user_id,)
-        ).fetchall()
-        reviews = db.execute(
-            """SELECT * FROM reviews
-               WHERE seller_id = ?""",
-            (user_id,)
-        ).fetchall()
+    seller_watches = db.execute(
+        "SELECT * FROM watches WHERE user_id = ?",
+        (user_id,)
+    ).fetchall()
+    reviews = db.execute(
+        """SELECT * FROM reviews
+           WHERE seller_id = ?""",
+        (user_id,)
+    ).fetchall()
 
-        if form.validate_on_submit():
-            review = form.message.data
-            date = send_current_time()
-            db.execute(
-                """INSERT INTO reviews(seller_id, buyer_id, review, date)
-                   VALUES (?, ?, ?, ?)""",
-                (user_id, buyer_id, review, date)
-            )
-            db.commit()
-            flash("Message was successfully sent!")
-            return redirect(url_for("watches.main"))
-    else:
-        flash(f"there is no such user {user_id}")
-        return redirect(url_for("watches.main"))
+    if form.validate_on_submit():
+        if blocked_sellers:
+            flash("You cannot review a seller while they are blocked")
+            return redirect(url_for("buyer.seller_profile", user_id=user_id))
+
+        review = form.message.data.strip()
+        if not review:
+            flash("Review cannot be empty")
+            return redirect(url_for("buyer.seller_profile", user_id=user_id))
+
+        date = send_current_time()
+        db.execute(
+            """INSERT INTO reviews(seller_id, buyer_id, review, date)
+               VALUES (?, ?, ?, ?)""",
+            (user_id, buyer_id, review, date)
+        )
+        db.commit()
+        flash("Review was successfully sent")
+        return redirect(url_for("buyer.seller_profile", user_id=user_id))
 
     return render_template(
         "seller_profile.html",
@@ -371,6 +475,16 @@ def seller_profile(user_id):
 def block_seller(seller_id):
     buyer_id = session["buyer"]
     db = get_db()
+
+    seller_user = db.execute(
+        "SELECT * FROM seller WHERE user_id = ?",
+        (seller_id,)
+    ).fetchone()
+
+    if seller_user is None:
+        flash("Seller not found")
+        return redirect(url_for("watches.main"))
+
     already_blocked = db.execute(
         """SELECT * FROM blocked_sellers
            WHERE seller_id = ?
@@ -384,9 +498,10 @@ def block_seller(seller_id):
             (buyer_id, seller_id)
         )
         db.commit()
+        flash(f"{seller_id} was blocked")
         return redirect(url_for("buyer.seller_profile", user_id=seller_id))
 
-    flash(f"{seller_id} is already blocked!")
+    flash(f"{seller_id} is already blocked")
     return redirect(url_for("watches.main"))
 
 
@@ -395,6 +510,16 @@ def block_seller(seller_id):
 def unblock_seller(seller_id):
     db = get_db()
     buyer_id = session["buyer"]
+
+    seller_user = db.execute(
+        "SELECT * FROM seller WHERE user_id = ?",
+        (seller_id,)
+    ).fetchone()
+
+    if seller_user is None:
+        flash("Seller not found")
+        return redirect(url_for("watches.main"))
+
     already_blocked = db.execute(
         """SELECT * FROM blocked_sellers
            WHERE seller_id = ?
@@ -408,9 +533,10 @@ def unblock_seller(seller_id):
             (seller_id, buyer_id)
         )
         db.commit()
+        flash(f"{seller_id} was unblocked")
         return redirect(url_for("buyer.seller_profile", user_id=seller_id))
 
-    flash(f"{seller_id} isn't blocked")
+    flash(f"{seller_id} is not blocked")
     return redirect(url_for("watches.main"))
 
 
@@ -445,7 +571,11 @@ def help_buyer():
     ).fetchall()
 
     if form.validate_on_submit():
-        message = form.message.data
+        message = form.message.data.strip()
+        if not message:
+            flash("Message cannot be empty")
+            return redirect(url_for("buyer.help_buyer"))
+
         date = send_current_time()
         db.execute(
             """INSERT INTO messages_to_response_buyer(buyer_id, message, date)
@@ -453,8 +583,8 @@ def help_buyer():
             (user_id, message, date)
         )
         db.commit()
-        flash("Message was successfully sent!")
-        return redirect(url_for("watches.main"))
+        flash("Message was successfully sent")
+        return redirect(url_for("buyer.help_buyer"))
 
     return render_template(
         "help.html",
@@ -462,6 +592,7 @@ def help_buyer():
         responded_messages_buyer=responded_messages_buyer,
         title="Help",
     )
+
 
 @buyer_bp.route("/change_password", methods=["GET", "POST"])
 @login_required_buyer
@@ -475,6 +606,11 @@ def change_password():
         "SELECT * FROM buyer WHERE user_id = ?",
         (session["buyer"],)
     ).fetchone()
+
+    if user is None:
+        session.clear()
+        flash("Buyer account was not found. Please log in again.")
+        return redirect(url_for("auth.login"))
 
     budget = user["budget"]
     user_id = session["buyer"]
@@ -493,6 +629,7 @@ def change_password():
             )
             db.commit()
             message = "successful!"
+            flash("Password changed successfully")
             return redirect(url_for("buyer.profile"))
 
     return render_template(
