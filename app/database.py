@@ -3,12 +3,16 @@ import os
 import sqlite3
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-DATABASE = os.path.join(BASE_DIR, "app.db")
+DEFAULT_DATABASE = os.path.join(BASE_DIR, "app.db")
+
+
+def get_database_path():
+    return os.environ.get("DATABASE", DEFAULT_DATABASE)
 
 
 def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(DATABASE)
+        g.db = sqlite3.connect(get_database_path())
         g.db.row_factory = sqlite3.Row
     return g.db
 
