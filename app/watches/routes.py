@@ -1,6 +1,6 @@
 import io
 
-from flask import Blueprint, abort, flash, get_flashed_messages, redirect, render_template, send_file, session, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, send_file, session, url_for
 
 from app.database import get_db
 from app.forms import CompareForm, FilterForm
@@ -56,7 +56,6 @@ def serve_image_from_selling(id):
 def main():
     form = FilterForm()
     db = get_db()
-    message = get_flashed_messages()
 
     if "buyer" in session:
         watches = db.execute(
@@ -129,7 +128,6 @@ def main():
         "index.html",
         title="Main page",
         watches=watches,
-        message=message,
         form=form
     )
 
