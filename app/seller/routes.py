@@ -63,6 +63,7 @@ def seller():
             (user_id, title, price, size, material, weight, description, quantity, watch_picture)
         )
         db.commit()
+        flash("Watch submitted for admin approval")
 
         return redirect(url_for("seller.seller"))
 
@@ -82,12 +83,27 @@ def seller():
 @login_required_seller
 def delete_review(review_id):
     db = get_db()
-    db.execute(
-        """DELETE FROM reviews
+    review = db.execute(
+        """SELECT * FROM reviews
            WHERE review_id = ?""",
         (review_id,)
+    ).fetchone()
+
+    if review is None:
+        flash("Review not found")
+        return redirect(url_for("seller.seller"))
+
+    if review["seller_id"] != session["seller"]:
+        flash("You are not allowed to delete this review")
+        return redirect(url_for("seller.seller"))
+
+    db.execute(
+        """DELETE FROM reviews
+           WHERE review_id = ? AND seller_id = ?""",
+        (review_id, session["seller"])
     )
     db.commit()
+    flash("Review deleted")
     return redirect(url_for("seller.seller"))
 
 
@@ -101,11 +117,11 @@ def edit_watch(watch_id):
            WHERE watch_id = ?""",
         (watch_id,)
     ).fetchone()
-    
+
     if watch is None:
         flash("Watch not found")
         return redirect(url_for("watches.main"))
-    
+
     if watch["user_id"] != session["seller"]:
         flash("You are not allowed to edit this watch")
         return redirect(url_for("seller.seller"))
@@ -141,10 +157,11 @@ def edit_watch(watch_id):
         db.execute(
             """UPDATE watches
                SET title = ?, price = ?, size = ?, material = ?, weight = ?, description = ?, quantity = ?, watch_picture = ?
-               WHERE watch_id = ?""",
-            (title, price, size, material, weight, description, quantity, watch_picture, watch_id)
+               WHERE watch_id = ? AND user_id = ?""",
+            (title, price, size, material, weight, description, quantity, watch_picture, watch_id, session["seller"])
         )
         db.commit()
+        flash("Watch updated")
         return redirect(url_for("seller.seller"))
 
     return render_template(
@@ -165,10 +182,25 @@ def edit_watch(watch_id):
 @login_required_seller
 def delete(watch_id):
     db = get_db()
-    db.execute(
-        """DELETE FROM watches
+    watch = db.execute(
+        """SELECT * FROM watches
            WHERE watch_id = ?""",
         (watch_id,)
+    ).fetchone()
+
+    if watch is None:
+        flash("Watch not found")
+        return redirect(url_for("seller.seller"))
+
+    if watch["user_id"] != session["seller"]:
+        flash("You are not allowed to delete this watch")
+        return redirect(url_for("seller.seller"))
+
+    db.execute(
+        """DELETE FROM watches
+           WHERE watch_id = ? AND user_id = ?""",
+        (watch_id, session["seller"])
     )
     db.commit()
+    flash("Watch deleted")
     return redirect(url_for("seller.seller"))
