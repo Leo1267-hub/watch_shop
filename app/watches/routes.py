@@ -84,17 +84,29 @@ def main():
         query = "SELECT * FROM watches WHERE 1=1"
         user_inputs = []
 
+        if "buyer" in session:
+            query += " AND user_id NOT IN (SELECT seller_id FROM blocked_sellers WHERE buyer_id = ?)"
+            user_inputs.append(session["buyer"])
+
         if form.watch.data and form.watch.data != "all":
             query += " AND title LIKE ?"
             user_inputs.append(form.watch.data)
 
-        if form.min_price.data:
+        if form.min_price.data is not None:
             query += " AND price >= ?"
             user_inputs.append(form.min_price.data)
 
-        if form.max_price.data:
+        if form.max_price.data is not None:
             query += " AND price <= ?"
             user_inputs.append(form.max_price.data)
+
+        if (
+            form.min_price.data is not None
+            and form.max_price.data is not None
+            and form.min_price.data > form.max_price.data
+        ):
+            flash("Minimum price cannot be greater than maximum price")
+            return redirect(url_for("watches.main"))
 
         if form.sort.data and form.sort.data != "all":
             if form.sort.data == "Price low to high":
@@ -130,6 +142,10 @@ def watch(watch_id):
         (watch_id,)
     ).fetchone()
 
+    if watch is None:
+        flash("Watch not found")
+        return redirect(url_for("watches.main"))
+
     title = watch["title"]
     return render_template("watch.html", watch=watch, title=title)
 
@@ -141,23 +157,28 @@ def compare():
     watch1_inf = ""
     watch2_inf = ""
 
-    if "watch1" not in session:
-        session["watch1"] = {}
-    if "watch2" not in session:
-        session["watch2"] = {}
+    watch1 = session.get("watch1")
+    watch2 = session.get("watch2")
 
-    watch1 = session["watch1"]
-    watch2 = session["watch2"]
-
-    if watch1 and watch2:
+    if watch1:
         watch1_inf = db.execute(
             "SELECT * FROM watches WHERE watch_id = ?",
             (watch1,)
         ).fetchone()
+        if watch1_inf is None:
+            session.pop("watch1", None)
+            watch1 = None
+            flash("One compared watch no longer exists")
+
+    if watch2:
         watch2_inf = db.execute(
             "SELECT * FROM watches WHERE watch_id = ?",
             (watch2,)
         ).fetchone()
+        if watch2_inf is None:
+            session.pop("watch2", None)
+            watch2 = None
+            flash("One compared watch no longer exists")
 
     if form.validate_on_submit():
         session.pop("watch1", None)
@@ -165,6 +186,7 @@ def compare():
         session.modified = True
         return redirect(url_for("watches.compare"))
 
+    session.modified = True
     return render_template(
         "compare.html",
         watch1=watch1,
@@ -178,6 +200,16 @@ def compare():
 
 @watches_bp.route("/compare_watch/<int:watch_id>")
 def compare_watch(watch_id):
+    db = get_db()
+    watch = db.execute(
+        "SELECT watch_id FROM watches WHERE watch_id = ?",
+        (watch_id,)
+    ).fetchone()
+
+    if watch is None:
+        flash("Watch not found")
+        return redirect(url_for("watches.main"))
+
     watch1 = session.get("watch1")
     watch2 = session.get("watch2")
 
@@ -186,7 +218,7 @@ def compare_watch(watch_id):
         return redirect(url_for("watches.main"))
 
     if watch1 and watch2:
-        flash("You can compare only  2 watches at a time!")
+        flash("You can compare only 2 watches at a time")
         return redirect(url_for("watches.main"))
 
     if not watch1:
@@ -194,4 +226,5 @@ def compare_watch(watch_id):
     elif not watch2:
         session["watch2"] = watch_id
 
+    session.modified = True
     return redirect(url_for("watches.compare"))
